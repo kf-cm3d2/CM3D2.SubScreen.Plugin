@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mods format="1.0" name="SubScreenParam.xml"
+      description="CM3D2.SubScreen.Plugin のパラメータ定義用XML">
+
+    <mod id="ENABLE" description ="有効" type="check" />
+    <mod id="ALWAYS_LOOK_AT_MAID" description ="サブカメラを常にメイドに向ける" type="check" />
+    <mod id="LOOK_AT_MAID" description ="サブカメラをメイドに向ける" type="button" />
+    <mod id="ALWAYS_LOOK_AT_FACE" description ="サブカメラを常にメイドの顔の前に" type="toggle">
+        <value prop_name="LOOK_AT_FACE.up" min="-10" max="10" label="上下" type="num" default="0" />
+        <value prop_name="LOOK_AT_FACE.left" min="-10" max="10" label="左右" type="num" default="0" />
+        <value prop_name="LOOK_AT_FACE.front" min="-10" max="10" label="前後" type="num" default="0.5" />
+    </mod>
+    <mod id="RESET_CAMERA_POS" description ="サブカメラをメインカメラに移動" type="button" />
+    <mod id="MOVE_TO_BACK" description ="スクリーンを中心後方に移動" type="button" />
+    <mod id="SUB_CAMERA" description ="サブカメラに切り替え" type="toggle">
+        <value prop_name="SUB_CAMERA.xMin" min="0" max="1" label="X" type="num" default="0" />
+        <value prop_name="SUB_CAMERA.yMin" min="0" max="1" label="Y" type="num" default="0" />
+        <value prop_name="SUB_CAMERA.width" min="0" max="1" label="サイズ" type="num" default="1" />
+    </mod>
+    <mod id="MAIN_LIGHT" description ="メインライト設定" type="toggle">
+        <value prop_name="MAIN_LIGHT.l" min="0" max="2.0" label="明るさ" type="num" default="1" />
+        <value prop_name="MAIN_LIGHT.r" min="0.0" max="2.0" default="1.0" label="赤" type="num" />
+        <value prop_name="MAIN_LIGHT.g" min="0.0" max="2.0" default="1.0" label="緑" type="num" />
+        <value prop_name="MAIN_LIGHT.b" min="0.0" max="2.0" default="1.0" label="青" type="num" />
+    </mod>
+    <mod id="SUB_LIGHT" description ="サブライトON" type="toggle">
+        <value prop_name="SUB_LIGHT.range" min="0" max="100" label="範囲" type="num" default="10" />
+        <value prop_name="SUB_LIGHT.l" min="0" max="10.0" label="明るさ" type="num" default="1" />
+        <value prop_name="SUB_LIGHT.r" min="0.0" max="2.0" default="1.0" label="赤" type="num" />
+        <value prop_name="SUB_LIGHT.g" min="0.0" max="2.0" default="1.0" label="緑" type="num" />
+        <value prop_name="SUB_LIGHT.b" min="0.0" max="2.0" default="1.0" label="青" type="num" />
+    </mod>
+    <mod id="CAMERA_COLOR" description ="カメラの色" >
+        <value prop_name="CAMERA_COLOR.r" min="0.0" max="2.0" default="1.0" label="赤" type="num" />
+        <value prop_name="CAMERA_COLOR.g" min="0.0" max="2.0" default="1.0" label="緑" type="num" />
+        <value prop_name="CAMERA_COLOR.b" min="0.0" max="2.0" default="1.0" label="青" type="num" />
+        <value prop_name="CAMERA_COLOR.a" min="0.0" max="1.0" default="0.5" label="アルファ" type="num" />
+    </mod>
+    <mod id="BS_POS" description ="スクリーンの位置" >
+        <value prop_name="BS_POS.x" min="-20" max="20" label="X" type="num" />
+        <value prop_name="BS_POS.y" min="-2" max="10" label="Y" type="num" />
+        <value prop_name="BS_POS.z" min="-20" max="20" label="Z" type="num" />
+    </mod>
+    <mod id="BS_SIZE" description ="スクリーンの倍率" >
+        <value prop_name="BS_SIZE" min="0" max="5" label="倍率" type="num" default="2" />
+    </mod>
+    <mod id="BS_ANGLE" description ="スクリーンの向き" >
+        <value prop_name="BS_ANGLE.x" min="-180" max="180" label="X軸" type="int" />
+        <value prop_name="BS_ANGLE.y" min="-180" max="180" label="Y軸" type="int" />
+        <value prop_name="BS_ANGLE.z" min="-180" max="180" label="Z軸" type="int" />
+    </mod>
+    <mod id="BS_COLOR" description ="スクリーンの色" >
+        <value prop_name="SCREEN_LIGHT.l" min="0" max="2.0" label="照明" type="num" default="0" />
+        <value prop_name="BS_COLOR.l" min="0.0" max="2.0" default="1.0" label="明るさ" type="num" />
+        <value prop_name="BS_COLOR.r" min="0.0" max="2.0" default="1.0" label="赤" type="num" />
+        <value prop_name="BS_COLOR.g" min="0.0" max="2.0" default="1.0" label="緑" type="num" />
+        <value prop_name="BS_COLOR.b" min="0.0" max="2.0" default="1.0" label="青" type="num" />
+        <value prop_name="BS_COLOR.a" min="0.0" max="1.0" default="1.0" label="アルファ" type="num" />
+    </mod>
+</mods>
