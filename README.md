@@ -5,7 +5,7 @@
 **前提条件**
 UnityInjectorが導入済みであること。
 
-[![ダウンロードボタン][img_download]][master zip]を押してzipファイルをダウンロードします。  
+Download ZIPボタンを押してzipファイルをダウンロードします。  
 zipファイルの中にあるUnityInjectorフォルダを、CM3D2フォルダにコピーしてください。
 
 ## 機能概要
