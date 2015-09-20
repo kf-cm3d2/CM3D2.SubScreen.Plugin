@@ -12,10 +12,10 @@ namespace CM3D2.SubScreen.Plugin
     PluginFilter("CM3D2x86"),
     PluginFilter("CM3D2VRx64"),
     PluginName("CM3D2 OffScreen"),
-    PluginVersion("0.2.0.0")]
+    PluginVersion("0.2.1.0")]
     public class SubScreen : PluginBase
     {
-        public const string Version = "0.2.0.0";
+        public const string Version = "0.2.1.0";
 
         const string DebugLogHeader = "OffScreen : ";
 
@@ -34,6 +34,10 @@ namespace CM3D2.SubScreen.Plugin
         const string PPropLookAtFaceFront = "LOOK_AT_FACE.front";
 
         const string PKeyAlwaysLookAtXxx = "ALWAYS_LOOK_AT_XXX";
+        const string PPropLookAtXxxUp = "LOOK_AT_XXX.up";
+        const string PPropLookAtXxxLeft = "LOOK_AT_XXX.left";
+        const string PPropLookAtXxxFront = "LOOK_AT_XXX.front";
+
         const string PKeyResetCameraPos = "RESET_CAMERA_POS";
         const string PKeyMoveToBack = "MOVE_TO_BACK";
 
@@ -61,6 +65,12 @@ namespace CM3D2.SubScreen.Plugin
         const string PPropCameraColorBlue = "CAMERA_COLOR.b";
         const string PPropCameraColorAlpha = "CAMERA_COLOR.a";
 
+        const string PKeyScreenFilter = "SCREEN_FILTER";
+        const string PPropScreenFilterLuminance = "SCREEN_FILTER.l";
+        const string PPropScreenFilterRed = "SCREEN_FILTER.r";
+        const string PPropScreenFilterGreen = "SCREEN_FILTER.g";
+        const string PPropScreenFilterBlue = "SCREEN_FILTER.b";
+        const string PPropScreenFilterAlpha = "SCREEN_FILTER.a";
 
         const string PKeyBsPos = "BS_POS";
         const string PPropBSPosX = "BS_POS.x";
@@ -114,6 +124,8 @@ namespace CM3D2.SubScreen.Plugin
         private GameObject goSubScreen;
 
         private GameObject goSsLight;
+
+        private GameObject goSsFrontFilter;
 
         private RenderTexture rTex;
 
@@ -465,19 +477,22 @@ namespace CM3D2.SubScreen.Plugin
                     }
                     if (ssParam.bEnabled[PKeyAlwaysLookAtFace])
                     {
-                        goSubCam.transform.position = maid.body0.trsHead.position;
-                        goSubCam.transform.position += maid.body0.trsHead.transform.TransformDirection(Vector3.up) * ssParam.fValue[PKeyAlwaysLookAtFace][PPropLookAtFaceFront];//前後
-                        goSubCam.transform.position += maid.body0.trsHead.transform.TransformDirection(Vector3.left) * ssParam.fValue[PKeyAlwaysLookAtFace][PPropLookAtFaceUp];//上下
-                        goSubCam.transform.position += maid.body0.trsHead.transform.TransformDirection(Vector3.back) * ssParam.fValue[PKeyAlwaysLookAtFace][PPropLookAtFaceLeft];//左右
-                        goSubCam.transform.LookAt(maid.body0.trsHead.transform);
+                        Transform tr = maid.body0.trsHead;
+                        goSubCam.transform.position = tr.position;
+                        goSubCam.transform.position += tr.TransformDirection(Vector3.up) * ssParam.fValue[PKeyAlwaysLookAtFace][PPropLookAtFaceFront];//前後
+                        goSubCam.transform.position += tr.TransformDirection(Vector3.left) * ssParam.fValue[PKeyAlwaysLookAtFace][PPropLookAtFaceUp];//上下
+                        goSubCam.transform.position += tr.TransformDirection(Vector3.back) * ssParam.fValue[PKeyAlwaysLookAtFace][PPropLookAtFaceLeft];//左右
+                        goSubCam.transform.LookAt(tr);
                     }
-
-                    //else if (ssParam.bEnabled[PKeyAlwaysLookAtXxx])
-                    //{
-                    //    subCam.transform.position = maid.body0.trManChinko.position;
-                    //    subCam.transform.LookAt(maid.body0.trManChinko.transform);
-                    //    subCam.transform.position += subCam.transform.TransformDirection(Vector3.back) * 0.5f;
-                    //}
+                    else if (ssParam.bEnabled[PKeyAlwaysLookAtXxx])
+                    {
+                        Transform tr = maid.body0.Pelvis.transform;
+                        goSubCam.transform.position = tr.position;
+                        goSubCam.transform.position += tr.TransformDirection(Vector3.up) * ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxFront];//前後
+                        goSubCam.transform.position += tr.TransformDirection(Vector3.left) * ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxUp];//上下
+                        goSubCam.transform.position += tr.TransformDirection(Vector3.back) * ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxLeft];//左右
+                        goSubCam.transform.LookAt(tr.position);
+                    }
                     else if (ssParam.bEnabled[PKeyAlwaysLookAtMaid])
                     {
                         goSubCam.transform.LookAt(maid.body0.trsHead.transform);
@@ -606,6 +621,13 @@ namespace CM3D2.SubScreen.Plugin
             Debug.Log(DebugLogHeader + "::createObjects ");
             goSubScreen = GameObject.CreatePrimitive(PrimitiveType.Cube);
             goSubScreen.layer = SubScreenLayer;
+            goSsFrontFilter = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            goSsFrontFilter.renderer.enabled = false;
+            goSsFrontFilter.layer = SubScreenLayer;
+            goSsFrontFilter.transform.SetParent(goSubScreen.transform);
+            goSsFrontFilter.transform.localScale = new Vector3(1f, 1f, 0.001f);
+            goSsFrontFilter.transform.localPosition += new Vector3(0, 0, 0.001f);
+            goSsFrontFilter.renderer.material.shader = Shader.Find("Transparent/Diffuse");
             goSubScreen.transform.localScale = new Vector3(1f, 1f, 0.01f);
             goSsLight = new GameObject();
             goSsLight.transform.localPosition += new Vector3(0, 0.5f, 0.5f);
@@ -643,7 +665,6 @@ namespace CM3D2.SubScreen.Plugin
             cam.targetTexture = rTex;
             goSubScreen.renderer.material.mainTexture = rTex;
             goSubCam.renderer.material.shader = Shader.Find("Transparent/Diffuse");
-            cam.renderer.material.shader = Shader.Find("Transparent/Diffuse");
             goSubScreen.renderer.material.shader = Shader.Find("Transparent/Diffuse");
 
             maid = GameMain.Instance.CharacterMgr.GetMaid(0);
@@ -654,6 +675,8 @@ namespace CM3D2.SubScreen.Plugin
 
             StartCoroutine(SetLocalTexture
                  (goSubCam, Application.dataPath + "/../UnityInjector/Config/SubScreenCamera.png"));
+            StartCoroutine(SetLocalTexture
+                 (goSsFrontFilter, Application.dataPath + "/../UnityInjector/Config/SubScreenFilter.png"));
         }
 
         private System.Collections.IEnumerator SetLocalTexture(GameObject gameObject, string filePath)
@@ -741,7 +764,7 @@ namespace CM3D2.SubScreen.Plugin
             if (ssParam.bEnabled[PKeySubLight])
             {
                 goSubLight.light.enabled = true;
-                goSubLight.light.range = ssParam.fValue[PKeySubLight][PPropSubLightRange];
+                goSubLight.light.spotAngle = ssParam.fValue[PKeySubLight][PPropSubLightRange];
                 color = goSubLight.light.color;
                 color.r = ssParam.fValue[PKeySubLight][PPropSubLightColorRed] * ssParam.fValue[PKeySubLight][PPropSubLightLuminance];
                 color.g = ssParam.fValue[PKeySubLight][PPropSubLightColorGreen] * ssParam.fValue[PKeySubLight][PPropSubLightLuminance];
@@ -751,6 +774,20 @@ namespace CM3D2.SubScreen.Plugin
             else
             {
                 goSubLight.light.enabled = false;
+            }
+            if (ssParam.bEnabled[PKeyScreenFilter])
+            {
+                goSsFrontFilter.renderer.enabled = true;
+                color = goSsFrontFilter.renderer.material.color;
+                color.r = ssParam.fValue[PKeyScreenFilter][PPropScreenFilterRed] * ssParam.fValue[PKeyScreenFilter][PPropScreenFilterLuminance];
+                color.g = ssParam.fValue[PKeyScreenFilter][PPropScreenFilterGreen] * ssParam.fValue[PKeyScreenFilter][PPropScreenFilterLuminance];
+                color.b = ssParam.fValue[PKeyScreenFilter][PPropScreenFilterBlue] * ssParam.fValue[PKeyScreenFilter][PPropScreenFilterLuminance];
+                color.a = ssParam.fValue[PKeyScreenFilter][PPropScreenFilterAlpha];
+                goSsFrontFilter.renderer.material.color = color;
+            }
+            else
+            {
+                goSsFrontFilter.renderer.enabled = false;
             }
         }
 
