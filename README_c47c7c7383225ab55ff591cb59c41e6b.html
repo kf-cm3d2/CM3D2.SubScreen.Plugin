@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<link rel='stylesheet' href='C:\Users\kaz\AppData\Roaming\MarkDownSharpEditor\css\github.css' type='text/css' />
+<style type='text/css'>
+	 ._mk {background-color:#FFFFC8}
+</style>
+<title>README.md</title>
+</head>
+<body>
+<h1>CM3D2.SubScreen.Plugin</h1>
+<p>画面上にサブカメラおよびスクリーンを配置し、サブカメラの映像をスクリーンに投影するUnityInjectorプラグインです。</p>
+<h2>導入方法</h2>
+<p><strong>前提条件</strong>
+UnityInjectorが導入済みであること。</p>
+<p>Download ZIPボタンを押してzipファイルをダウンロードします。<br />
+zipファイルの中にあるUnityInjectorフォルダを、CM3D2フォルダにコピーしてください。</p>
+<h2>機能概要</h2>
+<h4>対象シーン</h4>
+<ul>
+<li>エディット  
+</li>
+<li>夜伽  
+</li>
+<li>ダンス  
+</li>
+<li>ADVパート</li>
+</ul>
+<p>で動作します。</p>
+<h4>使用方法</h4>
+<h6>メニュー操作</h6>
+<p>F12キーでメニューが開きます。</p>
+<p><img src="http://i.imgur.com/ZLytYBB.png" alt="GUI" title="GUI" /></p>
+<ul>
+<li>
+<p>有効<br />
+サブスクリーンを有効にします。</p>
+</li>
+<li>
+<p>サブカメラを常にメイドに向ける<br />
+サブカメラを移動しても、常にメイドの方を向きます。</p>
+</li>
+<li>
+<p>サブカメラをメイドに向ける<br />
+サブカメラをメイドに向けます。</p>
+</li>
+<li>
+<p>サブカメラを常にメイドの顔の前に<br />
+サブカメラを自動的にメイドの顔の前に配置します。</p>
+<ul>
+<li>
+上下<br />
+上下位置を調整します。
+</li>
+<li>
+左右<br />
+左右位置を調整します。
+</li>
+<li>
+前後<br />
+前後位置を調整します。
+</li>
+</ul>
+</li>
+<li>
+<p>サブカメラをメインカメラに移動<br />
+サブカメラの位置をメインカメラに合わせます。</p>
+</li>
+<li>
+<p>スクリーンを中心後方に移動<br />
+スクリーンの位置をメインカメラ中心点のZ軸後方に移動します。</p>
+</li>
+<li>
+<p>サブカメラに切り替え<br />
+スクリーンに投影せず、サブカメラとして表示します。</p>
+<ul>
+<li>
+X<br />
+サブカメラのX軸方向位置を調整します。
+</li>
+<li>
+Y<br />
+サブカメラのY軸方向位置を調整します。
+</li>
+<li>
+サイズ<br />
+サブカメラのサイズを調整します。1で全画面表示となります。
+</li>
+</ul>
+</li>
+<li>
+<p>メインライト設定<br />
+メインライトの明るさ・色を調整します。  
+</p>
+<ul>
+<li>
+明るさ、赤、緑、青<br />
+各値を調整します。  
+
+</li>
+</ul>
+</li>
+<li>
+<p>サブライトON<br />
+サブライト（サブカメラ前方へのスポットライト）を点灯します。</p>
+<ul>
+<li>
+範囲、明るさ、赤、緑、青<br />
+各値を調整します。  
+
+</li>
+</ul>
+</li>
+<li>
+<p>カメラの色<br />
+サブカメラモデルの色を調整します。</p>
+<ul>
+<li>明るさ、赤、緑、青、アルファ
+各値を調整します。</li>
+</ul>
+</li>
+<li>
+<p>スクリーンの倍率<br />
+スクリーンの大きさを調整します。</p>
+</li>
+<li>
+<p>スクリーンの向き<br />
+スクリーンの向きを調整します。</p>
+</li>
+<li>
+<p>スクリーンの色<br />
+スクリーンの明るさ・色を調整します。</p>
+<ul>
+<li>照明<br />
+スクリーンに対し照明を当てます。<br />
+メインライトが当たらず暗い時に調整してください。</li>
+<li>明るさ、赤、緑、青、アルファ<br />
+各値を調整します。</li>
+</ul>
+</li>
+</ul>
+<div class='_mk'><!-- edit --></div>
+<ul>
+<li>
+スクリーンフィルター<br />
+スクリーンの前にConfig/SubSCreenFilter.pngを表示します。  
+
+<ul>
+<li>明るさ、赤、緑、青、アルファ<br />
+各値を調整します。</li>
+</ul>
+</li>
+</ul>
+<h6>カメラ操作</h6>
+<p><strong>W. S. A. D, Q, E</strong> カメラの向きに対し、前、後、左、右、上、下に移動します。</p>
+<p><strong>Ctrl + W, S, A, D, Q, E</strong> 向きに関係なく、座標軸方向に移動します。</p>
+<p><strong>Shift + (Ctrl +) W, S, A, D, Q, E</strong> 移動速度をあげます。</p>
+<p><strong>Alt + W, S, A, D, Q, E</strong> 回転します。</p>
+<h2>更新履歴</h2>
+<h4>0.2.1.0</h4>
+<ul>
+<li>サブライトの範囲が変わらない不具合修正</li>
+<li>サブスクリーン前にフィルター画像配置する機能追加</li>
+</ul>
+<h4>0.2.0.0</h4>
+<ul>
+<li>初版</li>
+</ul>
+</body>
+</html>
