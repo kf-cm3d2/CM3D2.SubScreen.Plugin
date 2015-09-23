@@ -14,12 +14,14 @@ namespace CM3D2.SubScreen.Plugin
     PluginFilter("CM3D2x86"),
     PluginFilter("CM3D2VRx64"),
     PluginName("CM3D2 OffScreen"),
-    PluginVersion("0.3.0.1")]
+    PluginVersion("0.3.0.2")]
     public class SubScreen : PluginBase
     {
-        public const string Version = "0.3.0.1";
+        public const string Version = "0.3.0.2";
 
         public readonly string WinFileName = Directory.GetCurrentDirectory() + @"\UnityInjector\Config\SubScreen.png";
+
+        private string presetXmlFileName = Application.dataPath + "/../UnityInjector/Config/SubScreenPreset.xml";
 
         const int SubScreenLayer = 11;
 
@@ -149,6 +151,14 @@ namespace CM3D2.SubScreen.Plugin
 
         private bool bsEnable = false;
 
+        private bool screenCreated = false;
+
+        private string currentBg = null;
+
+        private Dictionary<string, SSPreset> presets;
+
+        private Dictionary<string, string> scenePresets;
+
         Dictionary<string, UIButton[]> uiOnOffButton = new Dictionary<string, UIButton[]>();
         Dictionary<string, UIButton> uiCommandButton = new Dictionary<string, UIButton>();
         Dictionary<string, Dictionary<string, UILabel>> uiValueLable = new Dictionary<string, Dictionary<string, UILabel>>();
@@ -162,6 +172,7 @@ namespace CM3D2.SubScreen.Plugin
 
             public string XmlFormat;
             public KeyCode toggleKey = KeyCode.Pause;
+            public bool autoPreset = false;
             public List<string> sKey = new List<string>();
 
             public Dictionary<string, bool> bEnabled = new Dictionary<string, bool>();
@@ -246,6 +257,14 @@ namespace CM3D2.SubScreen.Plugin
                         }
                     }
                 }
+
+                string ap = ((XmlElement)mods).GetAttribute("autoPreset");
+                if (ap != null && ap.ToLower().Equals("true"))
+                {
+                    autoPreset = true;
+                    DebugLog("autoPreset", "enabled");
+                }
+
                 DebugLog("toggleKey", Enum.GetName(typeof(KeyCode), toggleKey));
                 XmlNodeList modNodeS = mods.SelectNodes("/mods/mod");
                 if (!(modNodeS.Count > 0))
@@ -418,6 +437,7 @@ namespace CM3D2.SubScreen.Plugin
             ssParam = new SubScreenParam();
             pv = new PixelValues();
             lastScreenSize = new Vector2(Screen.width, Screen.height);
+            currentBg = GameMain.Instance.BgMgr.GetBGName();
         }
 
         private void OnLevelWasLoaded(int level)
@@ -427,8 +447,20 @@ namespace CM3D2.SubScreen.Plugin
                 return;
             }
             bsEnable = false;
+            screenCreated = false;
             xmlLoaded = ssParam.Init();
             winRect = pv.PropScreenMH(1f - guiWidth, 0f, guiWidth, 1f);
+            createScreen();
+            if (ssParam.autoPreset)
+            {
+                loadPresetXml();
+                string key = generateSceneKey(level.ToString(), currentBg, "");
+                DebugLog("autoPresetTarget", key);
+                if (scenePresets.ContainsKey(key) && presets.ContainsKey(scenePresets[key]))
+                {
+                    SetPreset(presets[scenePresets[key]]);
+                }
+            }
         }
 
         private void Update()
@@ -437,6 +469,21 @@ namespace CM3D2.SubScreen.Plugin
             {
                 if (guiVisible) guiVisible = false;
                 return;
+            }
+
+            if (!currentBg.Equals(GameMain.Instance.BgMgr.GetBGName()))
+            {
+                DebugLog("BG changed", currentBg + " >> " + GameMain.Instance.BgMgr.GetBGName());
+                currentBg = GameMain.Instance.BgMgr.GetBGName();
+                if (ssParam.autoPreset)
+                {
+                    string key = generateSceneKey(Application.loadedLevel.ToString(), currentBg, "");
+                    if (scenePresets.ContainsKey(key) && presets.ContainsKey(scenePresets[key]))
+                    {
+                        SetPreset(presets[scenePresets[key]]);
+
+                    }
+                }
             }
 
             if (ssParam != null)
@@ -459,7 +506,7 @@ namespace CM3D2.SubScreen.Plugin
                     bSavePreset = false;
                 }
 
-                if (bsEnable)
+                if (bsEnable && screenCreated)
                 {
 
                     InputCheck();
@@ -482,6 +529,7 @@ namespace CM3D2.SubScreen.Plugin
                         goSubCam.camera.targetTexture = null;
                         goSubScreen.renderer.enabled = false;
                         goSsLight.light.enabled = false;
+                        goSsFrontFilter.renderer.enabled = false;
                     }
                     else
                     {
@@ -517,6 +565,7 @@ namespace CM3D2.SubScreen.Plugin
                     goSubCam.renderer.enabled = false;
                     goSubCam.camera.enabled = false;
                     goSubScreen.renderer.enabled = false;
+                    goSsFrontFilter.renderer.enabled = false;
                 }
             }
         }
@@ -683,7 +732,6 @@ namespace CM3D2.SubScreen.Plugin
 
             maid = GameMain.Instance.CharacterMgr.GetMaid(0);
             Transform mainTransform = GameMain.Instance.MainCamera.transform;
-            onClickButton(PKeyMoveToBack);
             goSubCam.transform.position = mainTransform.position;
             goSubCam.transform.LookAt(maid.body0.trsHead.transform);
 
@@ -692,6 +740,7 @@ namespace CM3D2.SubScreen.Plugin
             StartCoroutine(SetLocalTexture
                  (goSsFrontFilter, Application.dataPath + "/../UnityInjector/Config/SubScreenFilter.png"));
 
+            screenCreated = true;
             DebugLog("createScreen", "end");
         }
 
@@ -777,7 +826,7 @@ namespace CM3D2.SubScreen.Plugin
                 mainLight.color = color;
             }
 
-            if (ssParam.bEnabled[PKeySubLight])
+            if (ssParam.bEnabled[PKeyEnable] && ssParam.bEnabled[PKeySubLight])
             {
                 goSubLight.light.enabled = true;
                 goSubLight.light.spotAngle = ssParam.fValue[PKeySubLight][PPropSubLightRange];
@@ -791,7 +840,7 @@ namespace CM3D2.SubScreen.Plugin
             {
                 goSubLight.light.enabled = false;
             }
-            if (ssParam.bEnabled[PKeyScreenFilter])
+            if (ssParam.bEnabled[PKeyEnable] && ssParam.bEnabled[PKeyScreenFilter])
             {
                 goSsFrontFilter.renderer.enabled = true;
                 color = goSsFrontFilter.renderer.material.color;
@@ -840,10 +889,9 @@ namespace CM3D2.SubScreen.Plugin
                 winRect = GUI.Window(0, winRect, DoMainMenu, SubScreen.Version, winStyle);
                 if (!bsEnable && ssParam.bEnabled[PKeyEnable])
                 {
-                    createScreen();
+                    onClickButton(PKeyMoveToBack);
                 }
                 bsEnable = ssParam.bEnabled[PKeyEnable];
-
             }
 
         }
@@ -1038,7 +1086,7 @@ namespace CM3D2.SubScreen.Plugin
             conRect.height += (outRect.height + pv.Margin) * (presets.Count() + 1);
             // スクロールビュー
             scrollViewVector = GUI.BeginScrollView(scrollRect, scrollViewVector, conRect);
-            foreach (KeyValuePair<string, Preset> pair in presets)
+            foreach (KeyValuePair<string, SSPreset> pair in presets)
             {
                 if (GUI.Button(outRect, pair.Key, bStyle))
                 {
@@ -1056,10 +1104,10 @@ namespace CM3D2.SubScreen.Plugin
             GUI.DragWindow();
         }
 
-        private void SetPreset(Preset preset)
+        private void SetPreset(SSPreset preset)
         {
             ssParam.bEnabled[PKeyEnable] = preset.dParams[PKeyEnable].enabled;
-
+            bsEnable = ssParam.bEnabled[PKeyEnable];
             ssParam.bEnabled[PKeyAlwaysLookAtMaid] = preset.dParams[PKeyAlwaysLookAtMaid].enabled;
 
             ssParam.bEnabled[PKeyAlwaysLookAtFace] = preset.dParams[PKeyAlwaysLookAtFace].enabled;
@@ -1120,6 +1168,7 @@ namespace CM3D2.SubScreen.Plugin
             ssParam.fValue[PKeyScreenFilter][PPropScreenFilterAlpha] = preset.dParams[PKeyScreenFilter].dValues[PPropScreenFilterAlpha];
 
             bLoadPreset = false;
+            DebugLog("SetPreset", preset.name);
         }
 
         private void DoSavePreset(int winId)
@@ -1178,8 +1227,6 @@ namespace CM3D2.SubScreen.Plugin
             GUI.DragWindow();
         }
 
-        private String presetXmlFileName = Application.dataPath + "/../UnityInjector/Config/SubScreenPreset.xml";
-        private Dictionary<string, Preset> presets;
         private void loadPresetXml()
         {
             if (!File.Exists(presetXmlFileName))
@@ -1192,17 +1239,17 @@ namespace CM3D2.SubScreen.Plugin
             {
                 return;
             }
-            presets = new Dictionary<string, Preset>();
+            presets = new Dictionary<string, SSPreset>();
             foreach (var presetNode in presetNodes)
             {
-                Preset preset = new Preset();
-                preset.dParams = new Dictionary<string, Param>();
+                SSPreset preset = new SSPreset();
+                preset.dParams = new Dictionary<string, SSParam>();
                 preset.name = presetNode.Attribute("name").Value;
                 presets.Add(preset.name, preset);
                 var paramNodes = presetNode.Descendants("param");
                 foreach (var paramNode in paramNodes)
                 {
-                    Param param = new Param();
+                    SSParam param = new SSParam();
                     param.id = paramNode.Attribute("id").Value;
                     preset.dParams.Add(param.id, param);
                     bool? enabled = (bool?)paramNode.Attribute("value");
@@ -1221,6 +1268,30 @@ namespace CM3D2.SubScreen.Plugin
                     }
                 }
             }
+            var scenePresetNodes = xdoc.Descendants("scenePreset");
+            if (scenePresetNodes.Count() == 0)
+            {
+                return;
+            }
+            scenePresets = new Dictionary<string, string>();
+            foreach (var sceneNode in scenePresetNodes)
+            {
+                scenePresets.Add(
+                    generateSceneKey(sceneNode.Attribute("level").Value, sceneNode.Attribute("bgName").Value, sceneNode.Attribute("sexPosition").Value)
+                    , sceneNode.Value);
+            }
+
+        }
+
+        private string generateSceneKey(params string[] keys)
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            foreach (var key in keys)
+            {
+                sb.Append(key);
+                sb.Append(",");
+            }
+            return sb.ToString();
         }
 
         private void savePresetXml()
@@ -1501,13 +1572,13 @@ namespace CM3D2.SubScreen.Plugin
             Debug.Log(DebugLogHeader + key + ":" + message);
         }
 
-        class Preset
+        class SSPreset
         {
             public string name;
 
-            public Dictionary<string, Param> dParams;
+            public Dictionary<string, SSParam> dParams;
         }
-        class Param
+        class SSParam
         {
             public string id;
 
