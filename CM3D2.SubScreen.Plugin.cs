@@ -14,10 +14,10 @@ namespace CM3D2.SubScreen.Plugin
     PluginFilter("CM3D2x86"),
     PluginFilter("CM3D2VRx64"),
     PluginName("CM3D2 OffScreen"),
-    PluginVersion("0.3.0.0")]
+    PluginVersion("0.3.0.1")]
     public class SubScreen : PluginBase
     {
-        public const string Version = "0.3.0.0";
+        public const string Version = "0.3.0.1";
 
         public readonly string WinFileName = Directory.GetCurrentDirectory() + @"\UnityInjector\Config\SubScreen.png";
 
@@ -161,6 +161,7 @@ namespace CM3D2.SubScreen.Plugin
             public readonly string XmlFileName = Directory.GetCurrentDirectory() + @"\UnityInjector\Config\SubScreenParam.xml";
 
             public string XmlFormat;
+            public KeyCode toggleKey = KeyCode.Pause;
             public List<string> sKey = new List<string>();
 
             public Dictionary<string, bool> bEnabled = new Dictionary<string, bool>();
@@ -220,7 +221,7 @@ namespace CM3D2.SubScreen.Plugin
             {
                 if (!File.Exists(XmlFileName))
                 {
-                    SubScreen.ErrorLog(XmlFileName,"not exist.");
+                    SubScreen.ErrorLog(XmlFileName, "not exist.");
                     return false;
                 }
 
@@ -231,10 +232,21 @@ namespace CM3D2.SubScreen.Plugin
                 XmlFormat = ((XmlElement)mods).GetAttribute("format");
                 if (XmlFormat != "1.0")
                 {
-                    SubScreen.ErrorLog(SubScreen.Version," requires fomart=\"1.0\" of SubScreenParam.xml.");
+                    SubScreen.ErrorLog(SubScreen.Version, " requires fomart=\"1.0\" of SubScreenParam.xml.");
                     return false;
                 }
-
+                string keyAttr = ((XmlElement)mods).GetAttribute("toggleKey");
+                if (keyAttr != null && !keyAttr.Equals(""))
+                {
+                    foreach (string keyName in Enum.GetNames(typeof(KeyCode)))
+                    {
+                        if (keyAttr.Equals(keyName))
+                        {
+                            toggleKey = (KeyCode)Enum.Parse(typeof(KeyCode), keyAttr);
+                        }
+                    }
+                }
+                DebugLog("toggleKey", Enum.GetName(typeof(KeyCode), toggleKey));
                 XmlNodeList modNodeS = mods.SelectNodes("/mods/mod");
                 if (!(modNodeS.Count > 0))
                 {
@@ -440,7 +452,7 @@ namespace CM3D2.SubScreen.Plugin
                         GameMain.Instance.MainCamera.SetControl(true);
                     }
                 }
-                if (Input.GetKeyDown(KeyCode.Pause))
+                if (Input.GetKeyDown(ssParam.toggleKey))
                 {
                     guiVisible = !guiVisible;
                     bLoadPreset = false;
@@ -685,7 +697,7 @@ namespace CM3D2.SubScreen.Plugin
 
         private System.Collections.IEnumerator SetLocalTexture(GameObject gameObject, string filePath)
         {
-            DebugLog("SetLocalTexture:",filePath);
+            DebugLog("SetLocalTexture:", filePath);
             WWW file = new WWW("file://" + filePath);
             yield return file;
             gameObject.renderer.material.mainTexture = file.texture;

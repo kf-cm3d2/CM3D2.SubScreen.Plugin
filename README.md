@@ -10,7 +10,7 @@ Download ZIPボタンを押してzipファイルをダウンロードします�
 zipファイルの中にあるUnityInjectorフォルダを、CM3D2フォルダにコピーしてください。
 
 **自分でコンパイルする場合**  
-キーアサインを変更したい場合など、自分でコンパイルする場合、UnityInjectorフォルダにソース（**CM3D2.SubScreenPlugin.cs**）をコピーした後、コマンドプロンプト等で  
+自分でコンパイルする場合、UnityInjectorフォルダにソース（**CM3D2.SubScreenPlugin.cs**）をコピーした後、コマンドプロンプト等で  
 `cd [UnityInjectorフォルダ]`
 `C:\Windows\Microsoft.NET\Framework\v3.5\csc /t:library /lib:..\CM3D2x64_Data\Managed /r:UnityEngine.dll /r:UnityInjector.dll /r:Assembly-CSharp.dll /r:Assembly-CSharp-firstpass.dll /r:ExIni.dll CM3D2.SubScreenPlugin.cs`  
 を実行してください。
@@ -27,7 +27,9 @@ zipファイルの中にあるUnityInjectorフォルダを、CM3D2フォルダ�
 #### 使用方法
 ###### メニュー操作
 Pauseキーでメニューが開きます。  
-キーアサインを変更したい場合は、ソース内の**KeyCode.Pause**を好きなキーに変更・コンパイルしてください。
+キーアサインを変更したい場合は、UnityInjector/Config/SubScreenParam.xmlの**toggleKey="Pause"**Pauseを好きなキーに変更してください。  
+指定可能なキーは、[Unityスクリプトリファレンス](http://docs.unity3d.com/jp/current/ScriptReference/KeyCode.html)
+を参照してください。
 
 ![GUI](http://i.imgur.com/ZLytYBB.png  "GUI")
 
@@ -118,6 +120,9 @@ Pauseキーでメニューが開きます。
 
 
 ##更新履歴
+####0.3.0.1
+* メニューを開くキーをパラメータで変更できるよう変更
+
 ####0.3.0.0
 * プリセット保存・読み込み機能追加
 * 起動ボタンをPauseに変更

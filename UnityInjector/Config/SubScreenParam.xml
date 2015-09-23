@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mods format="1.0" name="SubScreenParam.xml"
-      description="CM3D2.SubScreen.Plugin のパラメータ定義用XML">
+      description="CM3D2.SubScreen.Plugin のパラメータ定義用XML" toggleKey="Pause">
 
     <mod id="ENABLE" description ="有効" type="check" />
     <mod id="ALWAYS_LOOK_AT_MAID" description ="サブカメラを常にメイドに向ける" type="check" />
