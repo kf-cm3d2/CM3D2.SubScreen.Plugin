@@ -2,9 +2,11 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Xml;
+using System.Xml.Linq;
 using UnityEngine;
 using UnityInjector;
 using UnityInjector.Attributes;
+using System.Linq;
 
 namespace CM3D2.SubScreen.Plugin
 {
@@ -12,12 +14,10 @@ namespace CM3D2.SubScreen.Plugin
     PluginFilter("CM3D2x86"),
     PluginFilter("CM3D2VRx64"),
     PluginName("CM3D2 OffScreen"),
-    PluginVersion("0.2.1.0")]
+    PluginVersion("0.3.0.0")]
     public class SubScreen : PluginBase
     {
-        public const string Version = "0.2.1.0";
-
-        const string DebugLogHeader = "OffScreen : ";
+        public const string Version = "0.3.0.0";
 
         public readonly string WinFileName = Directory.GetCurrentDirectory() + @"\UnityInjector\Config\SubScreen.png";
 
@@ -72,26 +72,26 @@ namespace CM3D2.SubScreen.Plugin
         const string PPropScreenFilterBlue = "SCREEN_FILTER.b";
         const string PPropScreenFilterAlpha = "SCREEN_FILTER.a";
 
-        const string PKeyBsPos = "BS_POS";
+        const string PKeyBSPos = "BS_POS";
         const string PPropBSPosX = "BS_POS.x";
         const string PPropBSPosY = "BS_POS.y";
         const string PPropBSPosZ = "BS_POS.z";
 
-        const string PKeyBssize = "BS_SIZE";
-        const string PPropBsSize = "BS_SIZE";
+        const string PKeyBSSize = "BS_SIZE";
+        const string PPropBSSize = "BS_SIZE";
 
-        const string PKeyBsAngle = "BS_ANGLE";
-        const string PPropBsAngleX = "BS_ANGLE.x";
-        const string PPropBsAngleY = "BS_ANGLE.y";
-        const string PPropBsAngleZ = "BS_ANGLE.z";
+        const string PKeyBSAngle = "BS_ANGLE";
+        const string PPropBSAngleX = "BS_ANGLE.x";
+        const string PPropBSAngleY = "BS_ANGLE.y";
+        const string PPropBSAngleZ = "BS_ANGLE.z";
 
-        const string PKeyBsColor = "BS_COLOR";
-        const string PPropScreenLIghtLuminance = "SCREEN_LIGHT.l";
-        const string PPropBsColorLuminance = "BS_COLOR.l";
-        const string PPropBsColorRed = "BS_COLOR.r";
-        const string PPropBsColorGreen = "BS_COLOR.g";
-        const string PPropBsColorBlue = "BS_COLOR.b";
-        const string PPropBsColorAlpha = "BS_COLOR.a";
+        const string PKeyBSColor = "BS_COLOR";
+        const string PPropScreenLightLuminance = "SCREEN_LIGHT.l";
+        const string PPropBSColorLuminance = "BS_COLOR.l";
+        const string PPropBSColorRed = "BS_COLOR.r";
+        const string PPropBSColorGreen = "BS_COLOR.g";
+        const string PPropBSColorBlue = "BS_COLOR.b";
+        const string PPropBSColorAlpha = "BS_COLOR.a";
 
         private enum TargetLevel
         {
@@ -192,7 +192,7 @@ namespace CM3D2.SubScreen.Plugin
             {
                 if (!loadXML())
                 {
-                    Debug.LogError(DebugLogHeader + "loadXML() failed.");
+                    SubScreen.ErrorLog("loadXML() failed.");
                     return false;
                 }
 
@@ -220,7 +220,7 @@ namespace CM3D2.SubScreen.Plugin
             {
                 if (!File.Exists(XmlFileName))
                 {
-                    Debug.LogError(DebugLogHeader + "\"" + XmlFileName + "\" does not exist.");
+                    SubScreen.ErrorLog(XmlFileName,"not exist.");
                     return false;
                 }
 
@@ -231,14 +231,14 @@ namespace CM3D2.SubScreen.Plugin
                 XmlFormat = ((XmlElement)mods).GetAttribute("format");
                 if (XmlFormat != "1.0")
                 {
-                    Debug.LogError(DebugLogHeader + SubScreen.Version + " requires fomart=\"1.0\" of SubScreenParam.xml.");
+                    SubScreen.ErrorLog(SubScreen.Version," requires fomart=\"1.0\" of SubScreenParam.xml.");
                     return false;
                 }
 
                 XmlNodeList modNodeS = mods.SelectNodes("/mods/mod");
                 if (!(modNodeS.Count > 0))
                 {
-                    Debug.LogError(DebugLogHeader + "\"" + XmlFileName + "\" has no <mod>elements.");
+                    SubScreen.ErrorLog(XmlFileName, " has no <mod>elements.");
                     return false;
                 }
 
@@ -440,9 +440,11 @@ namespace CM3D2.SubScreen.Plugin
                         GameMain.Instance.MainCamera.SetControl(true);
                     }
                 }
-                if (Input.GetKeyDown(KeyCode.F12))
+                if (Input.GetKeyDown(KeyCode.Pause))
                 {
                     guiVisible = !guiVisible;
+                    bLoadPreset = false;
+                    bSavePreset = false;
                 }
 
                 if (bsEnable)
@@ -618,7 +620,7 @@ namespace CM3D2.SubScreen.Plugin
 
         private void createScreen()
         {
-            Debug.Log(DebugLogHeader + "::createObjects ");
+            DebugLog("createScreen", "start");
             goSubScreen = GameObject.CreatePrimitive(PrimitiveType.Cube);
             goSubScreen.layer = SubScreenLayer;
             goSsFrontFilter = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -677,11 +679,13 @@ namespace CM3D2.SubScreen.Plugin
                  (goSubCam, Application.dataPath + "/../UnityInjector/Config/SubScreenCamera.png"));
             StartCoroutine(SetLocalTexture
                  (goSsFrontFilter, Application.dataPath + "/../UnityInjector/Config/SubScreenFilter.png"));
+
+            DebugLog("createScreen", "end");
         }
 
         private System.Collections.IEnumerator SetLocalTexture(GameObject gameObject, string filePath)
         {
-            Debug.Log(DebugLogHeader + "SetLocalTexture:" + filePath);
+            DebugLog("SetLocalTexture:",filePath);
             WWW file = new WWW("file://" + filePath);
             yield return file;
             gameObject.renderer.material.mainTexture = file.texture;
@@ -689,7 +693,7 @@ namespace CM3D2.SubScreen.Plugin
 
         public void onClickButton(String key)
         {
-            Debug.Log(DebugLogHeader + key);
+            DebugLog("onClickButton", key);
             if (key.Equals(PKeyLookAtMaid))
             {
                 goSubCam.camera.transform.LookAt(maid.body0.trsHead.transform);
@@ -709,9 +713,9 @@ namespace CM3D2.SubScreen.Plugin
                 vec.y = 1.3f;
                 vec.z -= 1.3f;
                 goSubScreen.transform.position = vec;
-                ssParam.fValue[PKeyBsPos][PPropBSPosX] = goSubScreen.transform.position.x;
-                ssParam.fValue[PKeyBsPos][PPropBSPosY] = goSubScreen.transform.position.y;
-                ssParam.fValue[PKeyBsPos][PPropBSPosZ] = goSubScreen.transform.position.z;
+                ssParam.fValue[PKeyBSPos][PPropBSPosX] = goSubScreen.transform.position.x;
+                ssParam.fValue[PKeyBSPos][PPropBSPosY] = goSubScreen.transform.position.y;
+                ssParam.fValue[PKeyBSPos][PPropBSPosZ] = goSubScreen.transform.position.z;
             }
         }
 
@@ -727,27 +731,27 @@ namespace CM3D2.SubScreen.Plugin
                 goSubCam.camera.rect = new Rect(0, 0, 1f, 1f);
             }
             goSubScreen.transform.position = new Vector3(
-            ssParam.fValue[PKeyBsPos][PPropBSPosX],
-            ssParam.fValue[PKeyBsPos][PPropBSPosY],
-            ssParam.fValue[PKeyBsPos][PPropBSPosZ]);
-            var x = ssParam.fValue[PKeyBssize][PPropBsSize];
+            ssParam.fValue[PKeyBSPos][PPropBSPosX],
+            ssParam.fValue[PKeyBSPos][PPropBSPosY],
+            ssParam.fValue[PKeyBSPos][PPropBSPosZ]);
+            var x = ssParam.fValue[PKeyBSSize][PPropBSSize];
             var y = x * Screen.height / Screen.width;
             goSubScreen.transform.localScale = new Vector3(x, y, goSubScreen.transform.localScale.z);
 
-            goSubScreen.transform.eulerAngles = new Vector3(ssParam.fValue[PKeyBsAngle][PPropBsAngleX],
-                ssParam.fValue[PKeyBsAngle][PPropBsAngleY], ssParam.fValue[PKeyBsAngle][PPropBsAngleZ]);
+            goSubScreen.transform.eulerAngles = new Vector3(ssParam.fValue[PKeyBSAngle][PPropBSAngleX],
+                ssParam.fValue[PKeyBSAngle][PPropBSAngleY], ssParam.fValue[PKeyBSAngle][PPropBSAngleZ]);
             Color color = goSubScreen.renderer.material.color;
-            color.r = ssParam.fValue[PKeyBsColor][PPropBsColorRed] * ssParam.fValue[PKeyBsColor][PPropBsColorLuminance];
-            color.g = ssParam.fValue[PKeyBsColor][PPropBsColorGreen] * ssParam.fValue[PKeyBsColor][PPropBsColorLuminance];
-            color.b = ssParam.fValue[PKeyBsColor][PPropBsColorBlue] * ssParam.fValue[PKeyBsColor][PPropBsColorLuminance];
-            color.a = ssParam.fValue[PKeyBsColor][PPropBsColorAlpha];
+            color.r = ssParam.fValue[PKeyBSColor][PPropBSColorRed] * ssParam.fValue[PKeyBSColor][PPropBSColorLuminance];
+            color.g = ssParam.fValue[PKeyBSColor][PPropBSColorGreen] * ssParam.fValue[PKeyBSColor][PPropBSColorLuminance];
+            color.b = ssParam.fValue[PKeyBSColor][PPropBSColorBlue] * ssParam.fValue[PKeyBSColor][PPropBSColorLuminance];
+            color.a = ssParam.fValue[PKeyBSColor][PPropBSColorAlpha];
             goSubScreen.renderer.material.color = color;
-            goSsLight.light.intensity = ssParam.fValue[PKeyBsColor][PPropScreenLIghtLuminance];
+            goSsLight.light.intensity = ssParam.fValue[PKeyBSColor][PPropScreenLightLuminance];
 
             color = goSubCam.renderer.material.color;
-            color.r = ssParam.fValue[PKeyCameraColor][PPropCameraColorRed] * ssParam.fValue[PKeyBsColor][PPropBsColorLuminance];
-            color.g = ssParam.fValue[PKeyCameraColor][PPropCameraColorGreen] * ssParam.fValue[PKeyBsColor][PPropBsColorLuminance];
-            color.b = ssParam.fValue[PKeyCameraColor][PPropCameraColorBlue] * ssParam.fValue[PKeyBsColor][PPropBsColorLuminance];
+            color.r = ssParam.fValue[PKeyCameraColor][PPropCameraColorRed] * ssParam.fValue[PKeyBSColor][PPropBSColorLuminance];
+            color.g = ssParam.fValue[PKeyCameraColor][PPropCameraColorGreen] * ssParam.fValue[PKeyBSColor][PPropBSColorLuminance];
+            color.b = ssParam.fValue[PKeyCameraColor][PPropCameraColorBlue] * ssParam.fValue[PKeyBSColor][PPropBSColorLuminance];
             color.a = ssParam.fValue[PKeyCameraColor][PPropCameraColorAlpha];
             goSubCam.renderer.material.color = color;
 
@@ -811,17 +815,28 @@ namespace CM3D2.SubScreen.Plugin
                 winRect = pv.PropScreenMH(winRect.x, winRect.y, guiWidth, 1f, lastScreenSize);
                 lastScreenSize = new Vector2(Screen.width, Screen.height);
             }
-            winRect = GUI.Window(0, winRect, addGUI, SubScreen.Version, winStyle);
-
-            if (!bsEnable && ssParam.bEnabled[PKeyEnable])
+            if (bLoadPreset)
             {
-                maid = GameMain.Instance.CharacterMgr.GetMaid(0);
-                createScreen();
+                winRect = GUI.Window(0, winRect, DoLoadPreset, SubScreen.Version, winStyle);
             }
-            bsEnable = ssParam.bEnabled[PKeyEnable];
+            else if (bSavePreset)
+            {
+                winRect = GUI.Window(0, winRect, DoSavePreset, SubScreen.Version, winStyle);
+            }
+            else
+            {
+                winRect = GUI.Window(0, winRect, DoMainMenu, SubScreen.Version, winStyle);
+                if (!bsEnable && ssParam.bEnabled[PKeyEnable])
+                {
+                    createScreen();
+                }
+                bsEnable = ssParam.bEnabled[PKeyEnable];
+
+            }
+
         }
 
-        private void addGUI(int winID)
+        private void DoMainMenu(int winID)
         {
             int mod_num = ssParam.KeyCount;
             Rect baseRect = pv.InsideRect(this.winRect);
@@ -846,6 +861,10 @@ namespace CM3D2.SubScreen.Plugin
                 }
                 else if (ssParam.sType[key] == "button")
                 {
+                    conRect.height += 40 + pv.Margin;
+                }
+                else if (ssParam.sType[key] == "toggle" && !ssParam.bEnabled[key])
+                {
                     conRect.height += pv.Margin;
                 }
                 else
@@ -854,6 +873,7 @@ namespace CM3D2.SubScreen.Plugin
                     conRect.height += pv.Margin * 2;
                 }
             }
+            conRect.height += pv.Margin * 4;
 
             lStyle.normal.textColor = color;
             tStyle.normal.textColor = color;
@@ -887,7 +907,8 @@ namespace CM3D2.SubScreen.Plugin
                     {
                         onClickButton(key);
                     }
-                    outRect.y += 40 + pv.Margin;
+                    outRect.y += outRect.height;
+                    outRect.y += pv.Margin;
                     continue;
                 }
 
@@ -956,8 +977,464 @@ namespace CM3D2.SubScreen.Plugin
                 outRect.y += pv.Margin * 2;
             }
 
+            GUIStyle winStyle = "box";
+            winStyle.fontSize = pv.Font("C1");
+            winStyle.alignment = TextAnchor.UpperRight;
+
+            if (GUI.Button(outRect, "プリセットの呼び出し", bStyle))
+            {
+                loadPresetXml();
+                if (presets != null && presets.Count() > 0)
+                {
+                    bLoadPreset = true;
+                }
+            }
+            outRect.y += outRect.height + pv.Margin;
+            if (GUI.Button(outRect, "現在値をプリセットとして保存", bStyle))
+            {
+                bSavePreset = true;
+            }
+            outRect.y += outRect.height + pv.Margin;
+
             GUI.EndScrollView();
             GUI.DragWindow();
+        }
+        private bool bLoadPreset = false;
+        private bool bSavePreset = false;
+        private string presetName = "";
+
+        private void DoLoadPreset(int winId)
+        {
+            Rect baseRect = pv.InsideRect(this.winRect);
+            Rect headerRect = new Rect(baseRect.x, baseRect.y, baseRect.width, pv.Line("H3"));
+            Rect scrollRect = new Rect(baseRect.x, baseRect.y + headerRect.height + pv.Margin
+                                      , baseRect.width + pv.PropPx(5), baseRect.height - headerRect.height - pv.Margin);
+            Rect conRect = new Rect(0, 0, scrollRect.width - pv.Sys_("HScrollBar.Width") - pv.Margin, 0);
+            Rect outRect = new Rect();
+            outRect.width = conRect.width;
+            outRect.height = pv.Line("H1");
+            GUIStyle lStyle = "label";
+            GUIStyle bStyle = "button";
+            Color color = new Color(1f, 1f, 1f, 0.98f);
+            lStyle.normal.textColor = color;
+            lStyle.fontSize = pv.Font("H3");
+            bStyle.normal.textColor = color;
+            bStyle.fontSize = pv.Font("H1");
+
+            drawWinHeader(headerRect, "プリセットから読み込み", lStyle);
+
+            conRect.height += (outRect.height + pv.Margin) * (presets.Count() + 1);
+            // スクロールビュー
+            scrollViewVector = GUI.BeginScrollView(scrollRect, scrollViewVector, conRect);
+            foreach (KeyValuePair<string, Preset> pair in presets)
+            {
+                if (GUI.Button(outRect, pair.Key, bStyle))
+                {
+                    SetPreset(pair.Value);
+                }
+                outRect.y += outRect.height + pv.Margin;
+            }
+            GUI.EndScrollView();
+            outRect.x = pv.Margin;
+            outRect.y = winRect.height - outRect.height - pv.Margin;
+            if (GUI.Button(outRect, "閉じる", bStyle))
+            {
+                bLoadPreset = false;
+            }
+            GUI.DragWindow();
+        }
+
+        private void SetPreset(Preset preset)
+        {
+            ssParam.bEnabled[PKeyEnable] = preset.dParams[PKeyEnable].enabled;
+
+            ssParam.bEnabled[PKeyAlwaysLookAtMaid] = preset.dParams[PKeyAlwaysLookAtMaid].enabled;
+
+            ssParam.bEnabled[PKeyAlwaysLookAtFace] = preset.dParams[PKeyAlwaysLookAtFace].enabled;
+            ssParam.fValue[PKeyAlwaysLookAtFace][PPropLookAtFaceUp] = preset.dParams[PKeyAlwaysLookAtFace].dValues[PPropLookAtFaceUp];
+            ssParam.fValue[PKeyAlwaysLookAtFace][PPropLookAtFaceLeft] = preset.dParams[PKeyAlwaysLookAtFace].dValues[PPropLookAtFaceLeft];
+            ssParam.fValue[PKeyAlwaysLookAtFace][PPropLookAtFaceFront] = preset.dParams[PKeyAlwaysLookAtFace].dValues[PPropLookAtFaceFront];
+
+            ssParam.bEnabled[PKeyAlwaysLookAtXxx] = preset.dParams[PKeyAlwaysLookAtFace].enabled;
+            ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxUp] = preset.dParams[PKeyAlwaysLookAtXxx].dValues[PPropLookAtXxxUp];
+            ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxLeft] = preset.dParams[PKeyAlwaysLookAtXxx].dValues[PPropLookAtXxxLeft];
+            ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxFront] = preset.dParams[PKeyAlwaysLookAtXxx].dValues[PPropLookAtXxxFront];
+
+            ssParam.bEnabled[PKeySubCamera] = preset.dParams[PKeySubCamera].enabled;
+            ssParam.fValue[PKeySubCamera][PPropSubCameraPosX] = preset.dParams[PKeySubCamera].dValues[PPropSubCameraPosX];
+            ssParam.fValue[PKeySubCamera][PPropSubCameraPosY] = preset.dParams[PKeySubCamera].dValues[PPropSubCameraPosY];
+            ssParam.fValue[PKeySubCamera][PPropSubCameraWidth] = preset.dParams[PKeySubCamera].dValues[PPropSubCameraWidth];
+
+            ssParam.bEnabled[PKeyMainLight] = preset.dParams[PKeyMainLight].enabled;
+            ssParam.fValue[PKeyMainLight][PPropMainLightLuminance] = preset.dParams[PKeyMainLight].dValues[PPropMainLightLuminance];
+            ssParam.fValue[PKeyMainLight][PPropMainLightColorRed] = preset.dParams[PKeyMainLight].dValues[PPropMainLightColorRed];
+            ssParam.fValue[PKeyMainLight][PPropMainLightColorGreen] = preset.dParams[PKeyMainLight].dValues[PPropMainLightColorGreen];
+            ssParam.fValue[PKeyMainLight][PPropMainLightColorBlue] = preset.dParams[PKeyMainLight].dValues[PPropMainLightColorBlue];
+
+            ssParam.bEnabled[PKeySubLight] = preset.dParams[PKeySubLight].enabled;
+            ssParam.fValue[PKeySubLight][PPropSubLightRange] = preset.dParams[PKeySubLight].dValues[PPropSubLightRange];
+            ssParam.fValue[PKeySubLight][PPropSubLightLuminance] = preset.dParams[PKeySubLight].dValues[PPropSubLightLuminance];
+            ssParam.fValue[PKeySubLight][PPropSubLightColorRed] = preset.dParams[PKeySubLight].dValues[PPropSubLightColorRed];
+            ssParam.fValue[PKeySubLight][PPropSubLightColorGreen] = preset.dParams[PKeySubLight].dValues[PPropSubLightColorGreen];
+            ssParam.fValue[PKeySubLight][PPropSubLightColorBlue] = preset.dParams[PKeySubLight].dValues[PPropSubLightColorBlue];
+
+            ssParam.fValue[PKeyCameraColor][PPropCameraColorRed] = preset.dParams[PKeyCameraColor].dValues[PPropCameraColorRed];
+            ssParam.fValue[PKeyCameraColor][PPropCameraColorGreen] = preset.dParams[PKeyCameraColor].dValues[PPropCameraColorGreen];
+            ssParam.fValue[PKeyCameraColor][PPropCameraColorBlue] = preset.dParams[PKeyCameraColor].dValues[PPropCameraColorBlue];
+            ssParam.fValue[PKeyCameraColor][PPropCameraColorAlpha] = preset.dParams[PKeyCameraColor].dValues[PPropCameraColorAlpha];
+
+            ssParam.fValue[PKeyBSPos][PPropBSPosX] = preset.dParams[PKeyBSPos].dValues[PPropBSPosX];
+            ssParam.fValue[PKeyBSPos][PPropBSPosY] = preset.dParams[PKeyBSPos].dValues[PPropBSPosY];
+            ssParam.fValue[PKeyBSPos][PPropBSPosZ] = preset.dParams[PKeyBSPos].dValues[PPropBSPosZ];
+
+            ssParam.fValue[PKeyBSSize][PPropBSSize] = preset.dParams[PKeyBSSize].dValues[PPropBSSize];
+
+            ssParam.fValue[PKeyBSAngle][PPropBSAngleX] = preset.dParams[PKeyBSAngle].dValues[PPropBSAngleX];
+            ssParam.fValue[PKeyBSAngle][PPropBSAngleY] = preset.dParams[PKeyBSAngle].dValues[PPropBSAngleY];
+            ssParam.fValue[PKeyBSAngle][PPropBSAngleZ] = preset.dParams[PKeyBSAngle].dValues[PPropBSAngleZ];
+
+            ssParam.fValue[PKeyBSColor][PPropScreenLightLuminance] = preset.dParams[PKeyBSColor].dValues[PPropScreenLightLuminance];
+            ssParam.fValue[PKeyBSColor][PPropBSColorLuminance] = preset.dParams[PKeyBSColor].dValues[PPropBSColorLuminance];
+            ssParam.fValue[PKeyBSColor][PPropBSColorRed] = preset.dParams[PKeyBSColor].dValues[PPropBSColorRed];
+            ssParam.fValue[PKeyBSColor][PPropBSColorGreen] = preset.dParams[PKeyBSColor].dValues[PPropBSColorGreen];
+            ssParam.fValue[PKeyBSColor][PPropBSColorBlue] = preset.dParams[PKeyBSColor].dValues[PPropBSColorBlue];
+            ssParam.fValue[PKeyBSColor][PPropBSColorAlpha] = preset.dParams[PKeyBSColor].dValues[PPropBSColorAlpha];
+
+            ssParam.bEnabled[PKeyScreenFilter] = preset.dParams[PKeyScreenFilter].enabled;
+            ssParam.fValue[PKeyScreenFilter][PPropScreenFilterLuminance] = preset.dParams[PKeyScreenFilter].dValues[PPropScreenFilterLuminance];
+            ssParam.fValue[PKeyScreenFilter][PPropScreenFilterRed] = preset.dParams[PKeyScreenFilter].dValues[PPropScreenFilterRed];
+            ssParam.fValue[PKeyScreenFilter][PPropScreenFilterGreen] = preset.dParams[PKeyScreenFilter].dValues[PPropScreenFilterGreen];
+            ssParam.fValue[PKeyScreenFilter][PPropScreenFilterBlue] = preset.dParams[PKeyScreenFilter].dValues[PPropScreenFilterBlue];
+            ssParam.fValue[PKeyScreenFilter][PPropScreenFilterAlpha] = preset.dParams[PKeyScreenFilter].dValues[PPropScreenFilterAlpha];
+
+            bLoadPreset = false;
+        }
+
+        private void DoSavePreset(int winId)
+        {
+            Rect baseRect = pv.InsideRect(this.winRect);
+            Rect headerRect = new Rect(baseRect.x, baseRect.y, baseRect.width, pv.Line("H3"));
+            Rect outRect = new Rect();
+            outRect.width = baseRect.width;
+            outRect.height = pv.Line("H1");
+            outRect.x = pv.Margin;
+            GUIStyle lStyle = "label";
+            GUIStyle bStyle = "button";
+            Color color = new Color(1f, 1f, 1f, 0.98f);
+            lStyle.normal.textColor = color;
+            lStyle.fontSize = pv.Font("H3");
+            bStyle.normal.textColor = color;
+            bStyle.fontSize = pv.Font("H1");
+
+            drawWinHeader(headerRect, "プリセットとして保存", lStyle);
+            outRect.y += headerRect.height + pv.Margin;
+            outRect.width = baseRect.width * 0.3f;
+            lStyle.fontSize = pv.Font("H1");
+            GUI.Label(outRect, "プリセット名", lStyle);
+            outRect.x += outRect.width;
+            outRect.width = baseRect.width * 0.7f;
+
+            lStyle.fontSize = pv.Font("H2");
+            presetName = GUI.TextField(outRect, presetName, lStyle);
+            outRect.x = pv.Margin;
+            outRect.y += outRect.height + pv.Margin;
+            outRect.width = baseRect.width / 2 - pv.Margin;
+            if (GUI.Button(outRect, "保存", bStyle))
+            {
+                if (presetName.Equals(""))
+                {
+                    // 名無しはNG
+                    return;
+                }
+                if (presets != null && presets.ContainsKey(presetName))
+                {
+                    // 同名はNG
+                    return;
+                }
+                else
+                {
+                    savePresetXml();
+                    bSavePreset = false;
+                }
+            }
+            outRect.x += outRect.width + pv.Margin;
+            if (GUI.Button(outRect, "閉じる", bStyle))
+            {
+                bSavePreset = false;
+            }
+
+            GUI.DragWindow();
+        }
+
+        private String presetXmlFileName = Application.dataPath + "/../UnityInjector/Config/SubScreenPreset.xml";
+        private Dictionary<string, Preset> presets;
+        private void loadPresetXml()
+        {
+            if (!File.Exists(presetXmlFileName))
+            {
+                return;
+            }
+            var xdoc = XDocument.Load(presetXmlFileName);
+            var presetNodes = xdoc.Descendants("preset");
+            if (presetNodes.Count() == 0)
+            {
+                return;
+            }
+            presets = new Dictionary<string, Preset>();
+            foreach (var presetNode in presetNodes)
+            {
+                Preset preset = new Preset();
+                preset.dParams = new Dictionary<string, Param>();
+                preset.name = presetNode.Attribute("name").Value;
+                presets.Add(preset.name, preset);
+                var paramNodes = presetNode.Descendants("param");
+                foreach (var paramNode in paramNodes)
+                {
+                    Param param = new Param();
+                    param.id = paramNode.Attribute("id").Value;
+                    preset.dParams.Add(param.id, param);
+                    bool? enabled = (bool?)paramNode.Attribute("value");
+                    if (enabled.HasValue && (bool)enabled)
+                    {
+                        param.enabled = true;
+                    }
+                    var valueNodes = paramNode.Descendants("value");
+                    if (valueNodes.Count() > 0)
+                    {
+                        param.dValues = new Dictionary<string, float>();
+                        foreach (var valueNode in valueNodes)
+                        {
+                            param.dValues.Add(valueNode.Attribute("prop_Name").Value, (float)valueNode.Attribute("value"));
+                        }
+                    }
+                }
+            }
+        }
+
+        private void savePresetXml()
+        {
+            if (!File.Exists(presetXmlFileName))
+            {
+                var xml = new XDocument(
+                     new XDeclaration("1.0", "utf-8", "true"),
+                     new XElement("presets"));
+                xml.Save(presetXmlFileName);
+            }
+
+            var xdoc = XDocument.Load(presetXmlFileName);
+
+            var preset = new XElement("preset",
+                new XAttribute("name", presetName),
+                    new XElement("param",
+                        new XAttribute("id", PKeyEnable),
+                        new XAttribute("value", ssParam.bEnabled[PKeyEnable])
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeyAlwaysLookAtMaid),
+                        new XAttribute("value", ssParam.bEnabled[PKeyAlwaysLookAtMaid])
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeyAlwaysLookAtFace),
+                        new XAttribute("value", ssParam.bEnabled[PKeyAlwaysLookAtFace]),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropLookAtFaceUp),
+                            new XAttribute("value", ssParam.fValue[PKeyAlwaysLookAtFace][PPropLookAtFaceUp])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropLookAtFaceLeft),
+                            new XAttribute("value", ssParam.fValue[PKeyAlwaysLookAtFace][PPropLookAtFaceLeft])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropLookAtFaceFront),
+                            new XAttribute("value", ssParam.fValue[PKeyAlwaysLookAtFace][PPropLookAtFaceFront])
+                            )
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeyAlwaysLookAtXxx),
+                        new XAttribute("value", ssParam.bEnabled[PKeyAlwaysLookAtXxx]),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropLookAtXxxUp),
+                            new XAttribute("value", ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxUp])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropLookAtXxxLeft),
+                            new XAttribute("value", ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxLeft])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropLookAtXxxFront),
+                            new XAttribute("value", ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxFront])
+                            )
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeySubCamera),
+                        new XAttribute("value", ssParam.bEnabled[PKeySubCamera]),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropSubCameraPosX),
+                            new XAttribute("value", ssParam.fValue[PKeySubCamera][PPropSubCameraPosX])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropSubCameraPosY),
+                            new XAttribute("value", ssParam.fValue[PKeySubCamera][PPropSubCameraPosY])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropSubCameraWidth),
+                            new XAttribute("value", ssParam.fValue[PKeySubCamera][PPropSubCameraWidth])
+                            )
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeyMainLight),
+                        new XAttribute("value", ssParam.bEnabled[PKeyMainLight]),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropMainLightLuminance),
+                            new XAttribute("value", ssParam.fValue[PKeyMainLight][PPropMainLightLuminance])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropMainLightColorRed),
+                            new XAttribute("value", ssParam.fValue[PKeyMainLight][PPropMainLightColorRed])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropMainLightColorGreen),
+                            new XAttribute("value", ssParam.fValue[PKeyMainLight][PPropMainLightColorGreen])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropMainLightColorBlue),
+                            new XAttribute("value", ssParam.fValue[PKeyMainLight][PPropMainLightColorBlue])
+                            )
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeySubLight),
+                        new XAttribute("value", ssParam.bEnabled[PKeySubLight]),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropSubLightRange),
+                            new XAttribute("value", ssParam.fValue[PKeySubLight][PPropSubLightRange])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropSubLightLuminance),
+                            new XAttribute("value", ssParam.fValue[PKeySubLight][PPropSubLightLuminance])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropSubLightColorRed),
+                            new XAttribute("value", ssParam.fValue[PKeySubLight][PPropSubLightColorRed])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropSubLightColorGreen),
+                            new XAttribute("value", ssParam.fValue[PKeySubLight][PPropSubLightColorGreen])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropSubLightColorBlue),
+                            new XAttribute("value", ssParam.fValue[PKeySubLight][PPropSubLightColorBlue])
+                            )
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeyCameraColor),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropCameraColorRed),
+                            new XAttribute("value", ssParam.fValue[PKeyCameraColor][PPropCameraColorRed])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropCameraColorGreen),
+                            new XAttribute("value", ssParam.fValue[PKeyCameraColor][PPropCameraColorGreen])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropCameraColorBlue),
+                            new XAttribute("value", ssParam.fValue[PKeyCameraColor][PPropCameraColorBlue])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropCameraColorAlpha),
+                            new XAttribute("value", ssParam.fValue[PKeyCameraColor][PPropCameraColorAlpha])
+                            )
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeyBSPos),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropBSPosX),
+                            new XAttribute("value", ssParam.fValue[PKeyBSPos][PPropBSPosX])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropBSPosY),
+                            new XAttribute("value", ssParam.fValue[PKeyBSPos][PPropBSPosY])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropBSPosZ),
+                            new XAttribute("value", ssParam.fValue[PKeyBSPos][PPropBSPosZ])
+                            )
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeyBSSize),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropBSSize),
+                            new XAttribute("value", ssParam.fValue[PKeyBSSize][PPropBSSize])
+                            )
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeyBSAngle),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropBSAngleX),
+                            new XAttribute("value", ssParam.fValue[PKeyBSAngle][PPropBSAngleX])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropBSAngleY),
+                            new XAttribute("value", ssParam.fValue[PKeyBSAngle][PPropBSAngleY])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropBSAngleZ),
+                            new XAttribute("value", ssParam.fValue[PKeyBSAngle][PPropBSAngleZ])
+                            )
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeyBSColor),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropScreenLightLuminance),
+                            new XAttribute("value", ssParam.fValue[PKeyBSColor][PPropScreenLightLuminance])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropBSColorLuminance),
+                            new XAttribute("value", ssParam.fValue[PKeyBSColor][PPropBSColorLuminance])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropBSColorRed),
+                            new XAttribute("value", ssParam.fValue[PKeyBSColor][PPropBSColorRed])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropBSColorGreen),
+                            new XAttribute("value", ssParam.fValue[PKeyBSColor][PPropBSColorGreen])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropBSColorBlue),
+                            new XAttribute("value", ssParam.fValue[PKeyBSColor][PPropBSColorBlue])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropBSColorAlpha),
+                            new XAttribute("value", ssParam.fValue[PKeyBSColor][PPropBSColorAlpha])
+                            )
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeyScreenFilter),
+                        new XAttribute("value", ssParam.bEnabled[PKeyScreenFilter]),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropScreenFilterLuminance),
+                            new XAttribute("value", ssParam.fValue[PKeyScreenFilter][PPropScreenFilterLuminance])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropScreenFilterRed),
+                            new XAttribute("value", ssParam.fValue[PKeyScreenFilter][PPropScreenFilterRed])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropScreenFilterGreen),
+                            new XAttribute("value", ssParam.fValue[PKeyScreenFilter][PPropScreenFilterGreen])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropScreenFilterBlue),
+                            new XAttribute("value", ssParam.fValue[PKeyScreenFilter][PPropScreenFilterBlue])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropScreenFilterAlpha),
+                            new XAttribute("value", ssParam.fValue[PKeyScreenFilter][PPropScreenFilterAlpha])
+                            )
+                        )
+                    );
+            xdoc.Root.Add(preset);
+            xdoc.Save(presetXmlFileName);
         }
 
         private int fixPx(int px)
@@ -988,6 +1465,43 @@ namespace CM3D2.SubScreen.Plugin
             return GUI.HorizontalSlider(outRect, value, min, max);
         }
 
+        const string DebugLogHeader = "OffScreen:";
 
+        public static void DebugLog(string message)
+        {
+            Debug.Log(DebugLogHeader + message);
+
+        }
+
+        public static void DebugLog(string key, string message)
+        {
+            Debug.Log(DebugLogHeader + key + ":" + message);
+        }
+
+        public static void ErrorLog(string message)
+        {
+            Debug.Log(DebugLogHeader + message);
+
+        }
+
+        public static void ErrorLog(string key, string message)
+        {
+            Debug.Log(DebugLogHeader + key + ":" + message);
+        }
+
+        class Preset
+        {
+            public string name;
+
+            public Dictionary<string, Param> dParams;
+        }
+        class Param
+        {
+            public string id;
+
+            public bool enabled = false;
+
+            public Dictionary<string, float> dValues;
+        }
     }
 }
