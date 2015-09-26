@@ -15,10 +15,10 @@ namespace CM3D2.SubScreen.Plugin
     PluginFilter("CM3D2x86"),
     PluginFilter("CM3D2VRx64"),
     PluginName("CM3D2 OffScreen"),
-    PluginVersion("0.3.9.1")]
+    PluginVersion("0.3.9.2")]
     public class SubScreen : PluginBase
     {
-        public const string Version = "0.3.9.1";
+        public const string Version = "0.3.9.2";
 
         public readonly string WinFileName = Directory.GetCurrentDirectory() + @"\UnityInjector\Config\SubScreen.png";
 
@@ -579,11 +579,22 @@ namespace CM3D2.SubScreen.Plugin
                 }
                 if (Input.GetKeyDown(ssParam.toggleKey))
                 {
-                    menuType = MenuType.Main;
+                    if (menuType == MenuType.None)
+                    {
+                        menuType = MenuType.Main;
+                    }
+                    else
+                    {
+                        menuType = MenuType.None;
+                    }
                 }
 
                 if (bsEnable && screenCreated)
                 {
+                    if (maid == null)
+                        maid = GameMain.Instance.CharacterMgr.GetMaid(0);
+                    if (maid == null)
+                        return;
 
                     InputCheck();
                     showSubCamera();
@@ -597,6 +608,7 @@ namespace CM3D2.SubScreen.Plugin
         {
             if (goSubCam != null)
             {
+
                 if (ssParam.bEnabled[PKeyEnable])
                 {
                     goSubCam.renderer.enabled = true;
