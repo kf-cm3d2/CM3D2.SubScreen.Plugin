@@ -2,14 +2,18 @@
 画面上にサブカメラおよびスクリーンを配置し、サブカメラの映像をスクリーンに投影するUnityInjectorプラグインです。
 
 ## 導入方法
-**前提条件**  
+#### 前提条件  
 UnityInjectorが導入済みであること。
 
-**インストール**  
+#### インストール  
 Download ZIPボタンを押してzipファイルをダウンロードします。  
 zipファイルの中にあるUnityInjectorフォルダを、CM3D2フォルダにコピーしてください。
 
-**自分でコンパイルする場合**  
+<span style="color:red;font-weight:bold;">注意</span>  
+0.3.9.0で機能追加した関係で、SubScreenParam.xml, SubScreenPreset.xmlとも要素・属性が追加されています。  
+以前のバージョンを利用されている方は、各xmlを削除してからご利用ください。  
+
+#### 自分でコンパイルする場合  
 自分でコンパイルする場合、UnityInjectorフォルダにソース（**CM3D2.SubScreenPlugin.cs**）をコピーした後、コマンドプロンプト等で  
 `cd [UnityInjectorフォルダ]`
 `C:\Windows\Microsoft.NET\Framework\v3.5\csc /t:library /lib:..\CM3D2x64_Data\Managed /r:UnityEngine.dll /r:UnityInjector.dll /r:Assembly-CSharp.dll /r:Assembly-CSharp-firstpass.dll /r:ExIni.dll CM3D2.SubScreenPlugin.cs`  
@@ -25,9 +29,12 @@ zipファイルの中にあるUnityInjectorフォルダを、CM3D2フォルダ�
 で動作します。
 
 #### 使用方法
+###### <span style="color:red">new!</span>プリセット自動適用
+UnityInjector/Config/SubScreenParam.xmlの**autoPreset="false"**の**false**を**true**に変更すると、メニューに「現在のシーンにプリセットを割り当て」ボタンが追加されます。プリセット登録後、こちらでプリセットを選択・割り当てることで、次回以降、該当シーン・夜伽プレイ開始時にプリセットが適用されます。
+
 ###### メニュー操作
 Pauseキーでメニューが開きます。  
-キーアサインを変更したい場合は、UnityInjector/Config/SubScreenParam.xmlの**toggleKey="Pause"**Pauseを好きなキーに変更してください。  
+キーアサインを変更したい場合は、UnityInjector/Config/SubScreenParam.xmlの**toggleKey="Pause"**の**Pause**を好きなキーに変更してください。  
 指定可能なキーは、[Unityスクリプトリファレンス](http://docs.unity3d.com/jp/current/ScriptReference/KeyCode.html)
 を参照してください。
 
@@ -80,6 +87,8 @@ Pauseキーでメニューが開きます。
     サブカメラモデルの色を調整します。  
     - 明るさ、赤、緑、青、アルファ  
     各値を調整します。
+	- <span style="color:red">new!</span> 視野角  
+		視野角を変更します。
 
 * スクリーンの倍率    
     スクリーンの大きさを調整します。
@@ -103,11 +112,20 @@ Pauseキーでメニューが開きます。
 * プリセットの呼び出し  
 	プリセットを選択し、設定値を読み込みます。
 	
+* <span style="color:red">new!</span> プリセットの削除  
+	プリセットを選択し、削除します。  
+	**※クリックで即削除されるのでご注意。**
+	
 * 現在値をプリセットとして保存  
 	現在の各設定値をプリセットとして保存します。  
 	同じプリセット名は保存できません。  
 	呼び出しやすいよう、わかりやすいプリセット名をつけるとよいでしょう。  
 	**※プリセットは、UnityInjector/Config/SubScreenPreset.xmlに保存されます。**
+
+* <span style="color:red">new!</span> 現在のシーンにプリセットを割り当て  
+	現在のシーン・夜伽プレイ開始時に、選択したプリセットが適用されるようにします。  
+	- 割り当てを解除  
+		現在のシーンに割り当てられているプリセットを解除します。
 
 ###### カメラ操作
 **W. S. A. D, Q, E** カメラの向きに対し、前、後、左、右、上、下に移動します。
@@ -120,6 +138,11 @@ Pauseキーでメニューが開きます。
 
 
 ##更新履歴
+####0.3.9.0
+* サブカメラの視野角を変更する機能追加
+* スクリーンを常にメインカメラ前に表示する機能追加
+* シーン・夜伽プレイごとに自動的にプリセットを適用する機能追加
+
 ####0.3.0.2
 * サブライト、スクリーンフィルターを有効にした状態でサブスクリーンを無効にしても残ってしまう不具合修正
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mods format="1.0" name="SubScreenParam.xml"
-      description="CM3D2.SubScreen.Plugin のパラメータ定義用XML" toggleKey="Pause">
+      description="CM3D2.SubScreen.Plugin のパラメータ定義用XML" toggleKey="Pause" autoPreset="false">
 
     <mod id="ENABLE" description ="有効" type="check" />
     <mod id="ALWAYS_LOOK_AT_MAID" description ="サブカメラを常にメイドに向ける" type="check" />
@@ -14,6 +14,11 @@
         <value prop_name="LOOK_AT_XXX.up" min="-1" max="1" label="上下" type="num" default="-0.06" />
         <value prop_name="LOOK_AT_XXX.left" min="-1" max="1" label="左右" type="num" default="0" />
         <value prop_name="LOOK_AT_XXX.front" min="-1" max="1" label="前後" type="num" default="0.38" />
+    </mod>
+    <mod id="ALWAYS_SCREEN" description ="スクリーンを常にメインカメラの前に" type="toggle">
+        <value prop_name="ALWAYS_SCREEN.up" min="-5" max="5" label="上下" type="num" default="0.5" />
+        <value prop_name="ALWAYS_SCREEN.left" min="-5" max="5" label="左右" type="num" default="0" />
+        <value prop_name="ALWAYS_SCREEN.front" min="0" max="10" label="前後" type="num" default="4" />
     </mod>
     <mod id="RESET_CAMERA_POS" description ="サブカメラをメインカメラに移動" type="button" />
     <mod id="MOVE_TO_BACK" description ="スクリーンを中心後方に移動" type="button" />
@@ -35,11 +40,12 @@
         <value prop_name="SUB_LIGHT.g" min="0.0" max="2.0" default="1.0" label="緑" type="num" />
         <value prop_name="SUB_LIGHT.b" min="0.0" max="2.0" default="1.0" label="青" type="num" />
     </mod>
-    <mod id="CAMERA_COLOR" description ="カメラの色" >
+    <mod id="CAMERA_COLOR" description ="サブカメラ設定" >
         <value prop_name="CAMERA_COLOR.r" min="0.0" max="2.0" default="1.0" label="赤" type="num" />
         <value prop_name="CAMERA_COLOR.g" min="0.0" max="2.0" default="1.0" label="緑" type="num" />
         <value prop_name="CAMERA_COLOR.b" min="0.0" max="2.0" default="1.0" label="青" type="num" />
         <value prop_name="CAMERA_COLOR.a" min="0.0" max="1.0" default="0.5" label="アルファ" type="num" />
+        <value prop_name="CAMERA_COLOR.fieldOfView" min="1.0" max="180" default="60" label="視野角" type="int" />
     </mod>
     <mod id="BS_POS" description ="スクリーンの位置" >
         <value prop_name="BS_POS.x" min="-20" max="20" label="X" type="num" />

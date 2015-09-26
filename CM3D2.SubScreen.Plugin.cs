@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityInjector;
 using UnityInjector.Attributes;
 using System.Linq;
+using System.Xml.XPath;
 
 namespace CM3D2.SubScreen.Plugin
 {
@@ -14,10 +15,10 @@ namespace CM3D2.SubScreen.Plugin
     PluginFilter("CM3D2x86"),
     PluginFilter("CM3D2VRx64"),
     PluginName("CM3D2 OffScreen"),
-    PluginVersion("0.3.0.2")]
+    PluginVersion("0.3.9.0")]
     public class SubScreen : PluginBase
     {
-        public const string Version = "0.3.0.2";
+        public const string Version = "0.3.9.0";
 
         public readonly string WinFileName = Directory.GetCurrentDirectory() + @"\UnityInjector\Config\SubScreen.png";
 
@@ -39,6 +40,11 @@ namespace CM3D2.SubScreen.Plugin
         const string PPropLookAtXxxUp = "LOOK_AT_XXX.up";
         const string PPropLookAtXxxLeft = "LOOK_AT_XXX.left";
         const string PPropLookAtXxxFront = "LOOK_AT_XXX.front";
+
+        const string PKeyAlwaysScreenOnMainCamera = "ALWAYS_SCREEN";
+        const string PPropAlwaysScreenOnMainCameraUp = "ALWAYS_SCREEN.up";
+        const string PPropAlwaysScreenOnMainCameraLeft = "ALWAYS_SCREEN.left";
+        const string PPropAlwaysScreenOnMainCameraFront = "ALWAYS_SCREEN.front";
 
         const string PKeyResetCameraPos = "RESET_CAMERA_POS";
         const string PKeyMoveToBack = "MOVE_TO_BACK";
@@ -66,6 +72,7 @@ namespace CM3D2.SubScreen.Plugin
         const string PPropCameraColorGreen = "CAMERA_COLOR.g";
         const string PPropCameraColorBlue = "CAMERA_COLOR.b";
         const string PPropCameraColorAlpha = "CAMERA_COLOR.a";
+        const string PPropSubCameraFieldOfView = "CAMERA_COLOR.fieldOfView";
 
         const string PKeyScreenFilter = "SCREEN_FILTER";
         const string PPropScreenFilterLuminance = "SCREEN_FILTER.l";
@@ -112,6 +119,17 @@ namespace CM3D2.SubScreen.Plugin
             // ダンス:entrance to you
             SceneDance_ETYL = 20
         }
+        private enum MenuType
+        {
+            None,
+            Main,
+            LoadPreset,
+            SavePreset,
+            RemovePreset,
+            SaveScenePreset
+        }
+
+        MenuType menuType = MenuType.None;
 
         const float LowSpeed = 1f;
 
@@ -147,13 +165,15 @@ namespace CM3D2.SubScreen.Plugin
 
         private bool xmlLoaded;
 
-        private bool guiVisible = false;
-
         private bool bsEnable = false;
 
         private bool screenCreated = false;
 
         private string currentBg = null;
+
+        private string presetName = "";
+
+        private YotogiManager yotogiManager;
 
         private Dictionary<string, SSPreset> presets;
 
@@ -164,6 +184,7 @@ namespace CM3D2.SubScreen.Plugin
         Dictionary<string, Dictionary<string, UILabel>> uiValueLable = new Dictionary<string, Dictionary<string, UILabel>>();
 
         Dictionary<string, float> currentValues = new Dictionary<string, float>();
+        private string currentYotogiName;
 
         private class SubScreenParam
         {
@@ -190,8 +211,10 @@ namespace CM3D2.SubScreen.Plugin
             public Dictionary<string, Dictionary<string, string>> sMatchPattern = new Dictionary<string, Dictionary<string, string>>();
             public Dictionary<string, Dictionary<string, bool>> bVVisible = new Dictionary<string, Dictionary<string, bool>>();
 
-            public int KeyCount { get { return sKey.Count; } }
-            public int ValCount(string key) { return sPropName[key].Length; }
+            public int KeyCount
+            { get { return sKey.Count; } }
+            public int ValCount(string key)
+            { return sPropName[key].Length; }
 
             //--------
 
@@ -279,8 +302,10 @@ namespace CM3D2.SubScreen.Plugin
                 {
                     // mod属性
                     string key = ((XmlElement)modNode).GetAttribute("id");
-                    if (key != "" && !sKey.Contains(key)) sKey.Add(key);
-                    else continue;
+                    if (key != "" && !sKey.Contains(key))
+                        sKey.Add(key);
+                    else
+                        continue;
 
                     bool b = false;
                     bEnabled[key] = false;
@@ -289,12 +314,16 @@ namespace CM3D2.SubScreen.Plugin
 
                     sType[key] = ((XmlElement)modNode).GetAttribute("type");
 
-                    if (sType[key] == "") sType[key] = "slider";
-                    if (IsCheck(key)) continue;
-                    if (IsButton(key)) continue;
+                    if (sType[key] == "")
+                        sType[key] = "slider";
+                    if (IsCheck(key))
+                        continue;
+                    if (IsButton(key))
+                        continue;
 
                     XmlNodeList valueNodeS = ((XmlElement)modNode).GetElementsByTagName("value");
-                    if (!(valueNodeS.Count > 0)) continue;
+                    if (!(valueNodeS.Count > 0))
+                        continue;
 
                     sPropName[key] = new string[valueNodeS.Count];
                     fValue[key] = new Dictionary<string, float>();
@@ -326,11 +355,17 @@ namespace CM3D2.SubScreen.Plugin
                         sVType[key][prop] = ((XmlElement)valueNode).GetAttribute("type");
                         switch (sVType[key][prop])
                         {
-                            case "num": break;
-                            case "scale": break;
-                            case "int": break;
-                            case "button": break;
-                            default: sVType[key][prop] = "num"; break;
+                            case "num":
+                                break;
+                            case "scale":
+                                break;
+                            case "int":
+                                break;
+                            case "button":
+                                break;
+                            default:
+                                sVType[key][prop] = "num";
+                                break;
                         }
 
                         fVmin[key][prop] = Single.TryParse(((XmlElement)valueNode).GetAttribute("min"), out x) ? x : 0f;
@@ -344,7 +379,8 @@ namespace CM3D2.SubScreen.Plugin
 
                         j++;
                     }
-                    if (j == 0) sKey.Remove(key);
+                    if (j == 0)
+                        sKey.Remove(key);
                 }
 
                 return true;
@@ -383,13 +419,19 @@ namespace CM3D2.SubScreen.Plugin
                 sys["HScrollBar.Width"] = 15;
             }
 
-            public int Font(string key) { return PropPx(font[key]); }
-            public int Line(string key) { return PropPx(line[key]); }
-            public int Sys(string key) { return PropPx(sys[key]); }
+            public int Font(string key)
+            { return PropPx(font[key]); }
+            public int Line(string key)
+            { return PropPx(line[key]); }
+            public int Sys(string key)
+            { return PropPx(sys[key]); }
 
-            public int Font_(string key) { return font[key]; }
-            public int Line_(string key) { return line[key]; }
-            public int Sys_(string key) { return sys[key]; }
+            public int Font_(string key)
+            { return font[key]; }
+            public int Line_(string key)
+            { return line[key]; }
+            public int Sys_(string key)
+            { return sys[key]; }
 
             public Rect PropScreen(float left, float top, float width, float height)
             {
@@ -446,11 +488,18 @@ namespace CM3D2.SubScreen.Plugin
             {
                 return;
             }
+            menuType = MenuType.None;
             bsEnable = false;
             screenCreated = false;
+            currentYotogiName = "";
             xmlLoaded = ssParam.Init();
             winRect = pv.PropScreenMH(1f - guiWidth, 0f, guiWidth, 1f);
             createScreen();
+            if (level == (int)TargetLevel.SceneYotogi)
+            {
+                yotogiManager = GameObject.Find("YotogiManager").GetComponent<YotogiManager>();
+            }
+
             if (ssParam.autoPreset)
             {
                 loadPresetXml();
@@ -467,7 +516,10 @@ namespace CM3D2.SubScreen.Plugin
         {
             if (!Enum.IsDefined(typeof(TargetLevel), Application.loadedLevel))
             {
-                if (guiVisible) guiVisible = false;
+                if (menuType == MenuType.Main)
+                {
+                    menuType = MenuType.None;
+                }
                 return;
             }
 
@@ -477,7 +529,7 @@ namespace CM3D2.SubScreen.Plugin
                 currentBg = GameMain.Instance.BgMgr.GetBGName();
                 if (ssParam.autoPreset)
                 {
-                    string key = generateSceneKey(Application.loadedLevel.ToString(), currentBg, "");
+                    string key = generateSceneKey(Application.loadedLevel.ToString(), currentBg, currentYotogiName);
                     if (scenePresets.ContainsKey(key) && presets.ContainsKey(scenePresets[key]))
                     {
                         SetPreset(presets[scenePresets[key]]);
@@ -485,10 +537,36 @@ namespace CM3D2.SubScreen.Plugin
                     }
                 }
             }
+            if (ssParam.autoPreset && Application.loadedLevel == (int)TargetLevel.SceneYotogi)
+            {
+                foreach (YotogiManager.PlayingSkillData skillData in yotogiManager.play_skill_array.Reverse())
+                {
+                    if (skillData.is_play)
+                    {
+                        var yotogiName = skillData.skill_pair.base_data.name;
+                        if (currentYotogiName == null || !yotogiName.Equals(currentYotogiName))
+                        {
+                            DebugLog("Yotogi changed", currentYotogiName + " >> " + yotogiName);
+                            currentYotogiName = yotogiName;
+                            string key = generateSceneKey(Application.loadedLevel.ToString(), currentBg, currentYotogiName);
+                            if (scenePresets.ContainsKey(key) && presets.ContainsKey(scenePresets[key]))
+                            {
+                                SetPreset(presets[scenePresets[key]]);
+
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                currentYotogiName = "";
+            }
 
             if (ssParam != null)
             {
-                if (guiVisible)
+                if (menuType == MenuType.Main)
                 {
                     if (winRect.Contains(Input.mousePosition))
                     {
@@ -501,9 +579,7 @@ namespace CM3D2.SubScreen.Plugin
                 }
                 if (Input.GetKeyDown(ssParam.toggleKey))
                 {
-                    guiVisible = !guiVisible;
-                    bLoadPreset = false;
-                    bSavePreset = false;
+                    menuType = MenuType.Main;
                 }
 
                 if (bsEnable && screenCreated)
@@ -558,6 +634,15 @@ namespace CM3D2.SubScreen.Plugin
                     else if (ssParam.bEnabled[PKeyAlwaysLookAtMaid])
                     {
                         goSubCam.transform.LookAt(maid.body0.trsHead.transform);
+                    }
+                    if (ssParam.bEnabled[PKeyAlwaysScreenOnMainCamera])
+                    {
+                        Transform tr = GameMain.Instance.MainCamera.transform;
+                        goSubScreen.transform.position = tr.position;
+                        goSubScreen.transform.position += tr.TransformDirection(Vector3.forward) * ssParam.fValue[PKeyAlwaysScreenOnMainCamera][PPropAlwaysScreenOnMainCameraFront];
+                        goSubScreen.transform.LookAt(tr);
+                        goSubScreen.transform.position += goSubScreen.transform.TransformDirection(Vector3.up) * ssParam.fValue[PKeyAlwaysScreenOnMainCamera][PPropAlwaysScreenOnMainCameraUp];
+                        goSubScreen.transform.position += goSubScreen.transform.TransformDirection(Vector3.left) * ssParam.fValue[PKeyAlwaysScreenOnMainCamera][PPropAlwaysScreenOnMainCameraLeft];
                     }
                 }
                 else
@@ -791,16 +876,20 @@ namespace CM3D2.SubScreen.Plugin
             {
                 goSubCam.camera.rect = new Rect(0, 0, 1f, 1f);
             }
-            goSubScreen.transform.position = new Vector3(
-            ssParam.fValue[PKeyBSPos][PPropBSPosX],
-            ssParam.fValue[PKeyBSPos][PPropBSPosY],
-            ssParam.fValue[PKeyBSPos][PPropBSPosZ]);
+
+            if (!ssParam.bEnabled[PKeyAlwaysScreenOnMainCamera])
+            {
+                goSubScreen.transform.position = new Vector3(
+                ssParam.fValue[PKeyBSPos][PPropBSPosX],
+                ssParam.fValue[PKeyBSPos][PPropBSPosY],
+                ssParam.fValue[PKeyBSPos][PPropBSPosZ]);
+
+                goSubScreen.transform.eulerAngles = new Vector3(ssParam.fValue[PKeyBSAngle][PPropBSAngleX],
+                    ssParam.fValue[PKeyBSAngle][PPropBSAngleY], ssParam.fValue[PKeyBSAngle][PPropBSAngleZ]);
+            }
             var x = ssParam.fValue[PKeyBSSize][PPropBSSize];
             var y = x * Screen.height / Screen.width;
             goSubScreen.transform.localScale = new Vector3(x, y, goSubScreen.transform.localScale.z);
-
-            goSubScreen.transform.eulerAngles = new Vector3(ssParam.fValue[PKeyBSAngle][PPropBSAngleX],
-                ssParam.fValue[PKeyBSAngle][PPropBSAngleY], ssParam.fValue[PKeyBSAngle][PPropBSAngleZ]);
             Color color = goSubScreen.renderer.material.color;
             color.r = ssParam.fValue[PKeyBSColor][PPropBSColorRed] * ssParam.fValue[PKeyBSColor][PPropBSColorLuminance];
             color.g = ssParam.fValue[PKeyBSColor][PPropBSColorGreen] * ssParam.fValue[PKeyBSColor][PPropBSColorLuminance];
@@ -808,6 +897,14 @@ namespace CM3D2.SubScreen.Plugin
             color.a = ssParam.fValue[PKeyBSColor][PPropBSColorAlpha];
             goSubScreen.renderer.material.color = color;
             goSsLight.light.intensity = ssParam.fValue[PKeyBSColor][PPropScreenLightLuminance];
+            if (ssParam.fValue[PKeyBSColor][PPropScreenLightLuminance] > 0)
+            {
+                GameMain.Instance.MainLight.light.cullingMask &= ~(1 << SubScreenLayer);
+            }
+            else
+            {
+                GameMain.Instance.MainLight.light.cullingMask|= (1 << SubScreenLayer);
+            }
 
             color = goSubCam.renderer.material.color;
             color.r = ssParam.fValue[PKeyCameraColor][PPropCameraColorRed] * ssParam.fValue[PKeyBSColor][PPropBSColorLuminance];
@@ -815,6 +912,7 @@ namespace CM3D2.SubScreen.Plugin
             color.b = ssParam.fValue[PKeyCameraColor][PPropCameraColorBlue] * ssParam.fValue[PKeyBSColor][PPropBSColorLuminance];
             color.a = ssParam.fValue[PKeyCameraColor][PPropCameraColorAlpha];
             goSubCam.renderer.material.color = color;
+            goSubCam.camera.fieldOfView = ssParam.fValue[PKeyCameraColor][PPropSubCameraFieldOfView];
 
             if (ssParam.bEnabled[PKeyMainLight])
             {
@@ -862,10 +960,12 @@ namespace CM3D2.SubScreen.Plugin
             {
                 return;
             }
-            if (!guiVisible) return;
+            if (menuType == MenuType.None)
+                return;
 
             maid = GameMain.Instance.CharacterMgr.GetMaid(0);
-            if (maid == null) return;
+            if (maid == null)
+                return;
 
             GUIStyle winStyle = "box";
             winStyle.fontSize = pv.Font("C1");
@@ -876,22 +976,29 @@ namespace CM3D2.SubScreen.Plugin
                 winRect = pv.PropScreenMH(winRect.x, winRect.y, guiWidth, 1f, lastScreenSize);
                 lastScreenSize = new Vector2(Screen.width, Screen.height);
             }
-            if (bLoadPreset)
+
+            switch (menuType)
             {
-                winRect = GUI.Window(0, winRect, DoLoadPreset, SubScreen.Version, winStyle);
-            }
-            else if (bSavePreset)
-            {
-                winRect = GUI.Window(0, winRect, DoSavePreset, SubScreen.Version, winStyle);
-            }
-            else
-            {
-                winRect = GUI.Window(0, winRect, DoMainMenu, SubScreen.Version, winStyle);
-                if (!bsEnable && ssParam.bEnabled[PKeyEnable])
-                {
-                    onClickButton(PKeyMoveToBack);
-                }
-                bsEnable = ssParam.bEnabled[PKeyEnable];
+                case MenuType.LoadPreset:
+                    winRect = GUI.Window(0, winRect, DoLoadPreset, SubScreen.Version, winStyle);
+                    break;
+                case MenuType.SavePreset:
+                    winRect = GUI.Window(0, winRect, DoSavePreset, SubScreen.Version, winStyle);
+                    break;
+                case MenuType.RemovePreset:
+                    winRect = GUI.Window(0, winRect, DoRemovePreset, SubScreen.Version, winStyle);
+                    break;
+                case MenuType.SaveScenePreset:
+                    winRect = GUI.Window(0, winRect, DoSaveScenePreset, SubScreen.Version, winStyle);
+                    break;
+                case MenuType.Main:
+                    winRect = GUI.Window(0, winRect, DoMainMenu, SubScreen.Version, winStyle);
+                    if (!bsEnable && ssParam.bEnabled[PKeyEnable])
+                    {
+                        onClickButton(PKeyMoveToBack);
+                    }
+                    bsEnable = ssParam.bEnabled[PKeyEnable];
+                    break;
             }
 
         }
@@ -921,7 +1028,7 @@ namespace CM3D2.SubScreen.Plugin
                 }
                 else if (ssParam.sType[key] == "button")
                 {
-                    conRect.height += 40 + pv.Margin;
+                    conRect.height += pv.Line("H1") + pv.Margin;
                 }
                 else if (ssParam.sType[key] == "toggle" && !ssParam.bEnabled[key])
                 {
@@ -929,11 +1036,16 @@ namespace CM3D2.SubScreen.Plugin
                 }
                 else
                 {
-                    for (int j = 0; j < ssParam.ValCount(key); j++) conRect.height += pv.Line("H1");
+                    for (int j = 0; j < ssParam.ValCount(key); j++)
+                        conRect.height += pv.Line("H1");
                     conRect.height += pv.Margin * 2;
                 }
             }
             conRect.height += pv.Margin * 4;
+            if (ssParam.autoPreset)
+            {
+                conRect.height += pv.Line("H1") * 2 + pv.Margin;
+            }
 
             lStyle.normal.textColor = color;
             tStyle.normal.textColor = color;
@@ -984,7 +1096,8 @@ namespace CM3D2.SubScreen.Plugin
                     ssParam.bEnabled[key] = GUI.Toggle(outRect, ssParam.bEnabled[key], ssParam.sDescription[key] + " (" + key + ")", tStyle);
                     outRect.y += outRect.height;
                     outRect.y += pv.Margin;
-                    if (!ssParam.bEnabled[key]) continue;
+                    if (!ssParam.bEnabled[key])
+                        continue;
                 }
                 else
                 {
@@ -1006,19 +1119,25 @@ namespace CM3D2.SubScreen.Plugin
                     outRect.width = conRect.width;
                     outRect.height = pv.Line("H1");
                     lStyle.fontSize = pv.Font("H1");
-                    if (value < vmin) value = vmin;
-                    if (value > vmax) value = vmax;
+                    if (value < vmin)
+                        value = vmin;
+                    if (value > vmax)
+                        value = vmax;
                     if (vType == "scale" && vmin < 1f)
                     {
-                        if (vmin < 0f) vmin = 0f;
-                        if (value < 0f) value = 0f;
+                        if (vmin < 0f)
+                            vmin = 0f;
+                        if (value < 0f)
+                            value = 0f;
 
                         float tmpmin = -Mathf.Abs(vmax - 1f);
                         float tmpmax = Mathf.Abs(vmax - 1f);
                         float tmp = (value < 1f) ? tmp = Mathf.Abs((1f - value) / (1f - vmin)) * tmpmin : value - 1f;
 
-                        if (tmp < tmpmin) tmp = tmpmin;
-                        if (tmp > tmpmax) tmp = tmpmax;
+                        if (tmp < tmpmin)
+                            tmp = tmpmin;
+                        if (tmp > tmpmax)
+                            tmp = tmpmax;
 
                         tmp = drawModValueSlider(outRect, tmp, tmpmin, tmpmax, label, lStyle);
 
@@ -1029,7 +1148,8 @@ namespace CM3D2.SubScreen.Plugin
                         value = (int)Mathf.Round(value);
                         ssParam.fValue[key][prop] = (int)Mathf.Round(drawModValueSlider(outRect, value, vmin, vmax, label, lStyle));
                     }
-                    else ssParam.fValue[key][prop] = drawModValueSlider(outRect, value, vmin, vmax, label, lStyle);
+                    else
+                        ssParam.fValue[key][prop] = drawModValueSlider(outRect, value, vmin, vmax, label, lStyle);
 
                     outRect.y += outRect.height;
                 }
@@ -1046,22 +1166,36 @@ namespace CM3D2.SubScreen.Plugin
                 loadPresetXml();
                 if (presets != null && presets.Count() > 0)
                 {
-                    bLoadPreset = true;
+                    menuType = MenuType.LoadPreset;
+                }
+            }
+            outRect.y += outRect.height + pv.Margin;
+            if (GUI.Button(outRect, "プリセットの削除", bStyle))
+            {
+                loadPresetXml();
+                if (presets != null && presets.Count() > 0)
+                {
+                    menuType = MenuType.RemovePreset;
                 }
             }
             outRect.y += outRect.height + pv.Margin;
             if (GUI.Button(outRect, "現在値をプリセットとして保存", bStyle))
             {
-                bSavePreset = true;
+                menuType = MenuType.SavePreset;
             }
             outRect.y += outRect.height + pv.Margin;
-
+            if (ssParam.autoPreset)
+            {
+                if (GUI.Button(outRect, "現在のシーンにプリセットを割り当て", bStyle))
+                {
+                    loadPresetXml();
+                    menuType = MenuType.SaveScenePreset;
+                }
+                outRect.y += outRect.height + pv.Margin;
+            }
             GUI.EndScrollView();
             GUI.DragWindow();
         }
-        private bool bLoadPreset = false;
-        private bool bSavePreset = false;
-        private string presetName = "";
 
         private void DoLoadPreset(int winId)
         {
@@ -1099,7 +1233,48 @@ namespace CM3D2.SubScreen.Plugin
             outRect.y = winRect.height - outRect.height - pv.Margin;
             if (GUI.Button(outRect, "閉じる", bStyle))
             {
-                bLoadPreset = false;
+                menuType = MenuType.Main;
+            }
+            GUI.DragWindow();
+        }
+
+        private void DoRemovePreset(int winId)
+        {
+            Rect baseRect = pv.InsideRect(this.winRect);
+            Rect headerRect = new Rect(baseRect.x, baseRect.y, baseRect.width, pv.Line("H3"));
+            Rect scrollRect = new Rect(baseRect.x, baseRect.y + headerRect.height + pv.Margin
+                                      , baseRect.width + pv.PropPx(5), baseRect.height - headerRect.height - pv.Margin);
+            Rect conRect = new Rect(0, 0, scrollRect.width - pv.Sys_("HScrollBar.Width") - pv.Margin, 0);
+            Rect outRect = new Rect();
+            outRect.width = conRect.width;
+            outRect.height = pv.Line("H1");
+            GUIStyle lStyle = "label";
+            GUIStyle bStyle = "button";
+            Color color = new Color(1f, 1f, 1f, 0.98f);
+            lStyle.normal.textColor = color;
+            lStyle.fontSize = pv.Font("H3");
+            bStyle.normal.textColor = color;
+            bStyle.fontSize = pv.Font("H1");
+
+            drawWinHeader(headerRect, "プリセットを削除", lStyle);
+
+            conRect.height += (outRect.height + pv.Margin) * (presets.Count() + 1);
+            // スクロールビュー
+            scrollViewVector = GUI.BeginScrollView(scrollRect, scrollViewVector, conRect);
+            foreach (KeyValuePair<string, SSPreset> pair in presets)
+            {
+                if (GUI.Button(outRect, pair.Key, bStyle))
+                {
+                    RemovePreset(pair.Key);
+                }
+                outRect.y += outRect.height + pv.Margin;
+            }
+            GUI.EndScrollView();
+            outRect.x = pv.Margin;
+            outRect.y = winRect.height - outRect.height - pv.Margin;
+            if (GUI.Button(outRect, "閉じる", bStyle))
+            {
+                menuType = MenuType.Main;
             }
             GUI.DragWindow();
         }
@@ -1119,6 +1294,11 @@ namespace CM3D2.SubScreen.Plugin
             ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxUp] = preset.dParams[PKeyAlwaysLookAtXxx].dValues[PPropLookAtXxxUp];
             ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxLeft] = preset.dParams[PKeyAlwaysLookAtXxx].dValues[PPropLookAtXxxLeft];
             ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxFront] = preset.dParams[PKeyAlwaysLookAtXxx].dValues[PPropLookAtXxxFront];
+
+            ssParam.bEnabled[PKeyAlwaysScreenOnMainCamera] = preset.dParams[PKeyAlwaysScreenOnMainCamera].enabled;
+            ssParam.fValue[PKeyAlwaysScreenOnMainCamera][PPropAlwaysScreenOnMainCameraUp] = preset.dParams[PKeyAlwaysScreenOnMainCamera].dValues[PPropAlwaysScreenOnMainCameraUp];
+            ssParam.fValue[PKeyAlwaysScreenOnMainCamera][PPropAlwaysScreenOnMainCameraLeft] = preset.dParams[PKeyAlwaysScreenOnMainCamera].dValues[PPropAlwaysScreenOnMainCameraLeft];
+            ssParam.fValue[PKeyAlwaysScreenOnMainCamera][PPropAlwaysScreenOnMainCameraFront] = preset.dParams[PKeyAlwaysScreenOnMainCamera].dValues[PPropAlwaysScreenOnMainCameraFront];
 
             ssParam.bEnabled[PKeySubCamera] = preset.dParams[PKeySubCamera].enabled;
             ssParam.fValue[PKeySubCamera][PPropSubCameraPosX] = preset.dParams[PKeySubCamera].dValues[PPropSubCameraPosX];
@@ -1142,6 +1322,7 @@ namespace CM3D2.SubScreen.Plugin
             ssParam.fValue[PKeyCameraColor][PPropCameraColorGreen] = preset.dParams[PKeyCameraColor].dValues[PPropCameraColorGreen];
             ssParam.fValue[PKeyCameraColor][PPropCameraColorBlue] = preset.dParams[PKeyCameraColor].dValues[PPropCameraColorBlue];
             ssParam.fValue[PKeyCameraColor][PPropCameraColorAlpha] = preset.dParams[PKeyCameraColor].dValues[PPropCameraColorAlpha];
+            ssParam.fValue[PKeyCameraColor][PPropSubCameraFieldOfView] = preset.dParams[PKeyCameraColor].dValues[PPropSubCameraFieldOfView];
 
             ssParam.fValue[PKeyBSPos][PPropBSPosX] = preset.dParams[PKeyBSPos].dValues[PPropBSPosX];
             ssParam.fValue[PKeyBSPos][PPropBSPosY] = preset.dParams[PKeyBSPos].dValues[PPropBSPosY];
@@ -1167,7 +1348,6 @@ namespace CM3D2.SubScreen.Plugin
             ssParam.fValue[PKeyScreenFilter][PPropScreenFilterBlue] = preset.dParams[PKeyScreenFilter].dValues[PPropScreenFilterBlue];
             ssParam.fValue[PKeyScreenFilter][PPropScreenFilterAlpha] = preset.dParams[PKeyScreenFilter].dValues[PPropScreenFilterAlpha];
 
-            bLoadPreset = false;
             DebugLog("SetPreset", preset.name);
         }
 
@@ -1215,15 +1395,63 @@ namespace CM3D2.SubScreen.Plugin
                 else
                 {
                     savePresetXml();
-                    bSavePreset = false;
+                    menuType = MenuType.Main;
                 }
             }
             outRect.x += outRect.width + pv.Margin;
             if (GUI.Button(outRect, "閉じる", bStyle))
             {
-                bSavePreset = false;
+                menuType = MenuType.Main;
             }
 
+            GUI.DragWindow();
+        }
+
+        private void DoSaveScenePreset(int winId)
+        {
+            Rect baseRect = pv.InsideRect(this.winRect);
+            Rect headerRect = new Rect(baseRect.x, baseRect.y, baseRect.width, pv.Line("H3"));
+            Rect scrollRect = new Rect(baseRect.x, baseRect.y + headerRect.height + pv.Margin
+                                      , baseRect.width + pv.PropPx(5), baseRect.height - headerRect.height - pv.Margin - pv.Line("H1") * 2);
+            Rect conRect = new Rect(0, 0, scrollRect.width - pv.Sys_("HScrollBar.Width") - pv.Margin, 0);
+            Rect outRect = new Rect();
+            outRect.width = conRect.width;
+            outRect.height = pv.Line("H1");
+            GUIStyle lStyle = "label";
+            GUIStyle bStyle = "button";
+            Color color = new Color(1f, 1f, 1f, 0.98f);
+            lStyle.normal.textColor = color;
+            lStyle.fontSize = pv.Font("H3");
+            bStyle.normal.textColor = color;
+            bStyle.fontSize = pv.Font("H1");
+
+            drawWinHeader(headerRect, "現在のシーンにプリセットを割り当て", lStyle);
+
+            conRect.height += (outRect.height + pv.Margin) * (presets.Count() + 2);
+            // スクロールビュー
+            scrollViewVector = GUI.BeginScrollView(scrollRect, scrollViewVector, conRect);
+            foreach (KeyValuePair<string, SSPreset> pair in presets)
+            {
+                if (GUI.Button(outRect, pair.Key, bStyle))
+                {
+                    SaveScenePreset(pair.Key);
+                    menuType = MenuType.Main;
+                }
+                outRect.y += outRect.height + pv.Margin;
+            }
+            GUI.EndScrollView();
+            outRect.x = pv.Margin;
+            outRect.y = winRect.height - outRect.height * 2 - pv.Margin;
+            if (GUI.Button(outRect, "割り当てを解除", bStyle))
+            {
+                RemoveScenePreset();
+                menuType = MenuType.Main;
+            }
+            outRect.y = winRect.height - outRect.height - pv.Margin;
+            if (GUI.Button(outRect, "閉じる", bStyle))
+            {
+                menuType = MenuType.Main;
+            }
             GUI.DragWindow();
         }
 
@@ -1277,7 +1505,7 @@ namespace CM3D2.SubScreen.Plugin
             foreach (var sceneNode in scenePresetNodes)
             {
                 scenePresets.Add(
-                    generateSceneKey(sceneNode.Attribute("level").Value, sceneNode.Attribute("bgName").Value, sceneNode.Attribute("sexPosition").Value)
+                    generateSceneKey(sceneNode.Attribute("level").Value, sceneNode.Attribute("bgName").Value, sceneNode.Attribute("yotogiName").Value)
                     , sceneNode.Value);
             }
 
@@ -1346,6 +1574,22 @@ namespace CM3D2.SubScreen.Plugin
                         new XElement("value",
                             new XAttribute("prop_Name", PPropLookAtXxxFront),
                             new XAttribute("value", ssParam.fValue[PKeyAlwaysLookAtXxx][PPropLookAtXxxFront])
+                            )
+                        ),
+                    new XElement("param",
+                        new XAttribute("id", PKeyAlwaysScreenOnMainCamera),
+                        new XAttribute("value", ssParam.bEnabled[PKeyAlwaysScreenOnMainCamera]),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropAlwaysScreenOnMainCameraUp),
+                            new XAttribute("value", ssParam.fValue[PKeyAlwaysScreenOnMainCamera][PPropAlwaysScreenOnMainCameraUp])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropAlwaysScreenOnMainCameraLeft),
+                            new XAttribute("value", ssParam.fValue[PKeyAlwaysScreenOnMainCamera][PPropAlwaysScreenOnMainCameraLeft])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropAlwaysScreenOnMainCameraFront),
+                            new XAttribute("value", ssParam.fValue[PKeyAlwaysScreenOnMainCamera][PPropAlwaysScreenOnMainCameraFront])
                             )
                         ),
                     new XElement("param",
@@ -1425,6 +1669,10 @@ namespace CM3D2.SubScreen.Plugin
                         new XElement("value",
                             new XAttribute("prop_Name", PPropCameraColorAlpha),
                             new XAttribute("value", ssParam.fValue[PKeyCameraColor][PPropCameraColorAlpha])
+                            ),
+                        new XElement("value",
+                            new XAttribute("prop_Name", PPropSubCameraFieldOfView),
+                            new XAttribute("value", ssParam.fValue[PKeyCameraColor][PPropSubCameraFieldOfView])
                             )
                         ),
                     new XElement("param",
@@ -1516,8 +1764,82 @@ namespace CM3D2.SubScreen.Plugin
                             )
                         )
                     );
-            xdoc.Root.Add(preset);
+            var presetNodes = xdoc.Descendants("preset");
+            if (presetNodes.Count() == 0)
+            {
+                xdoc.Root.AddFirst(preset);
+            }
+            else
+            {
+                presetNodes.Last().AddAfterSelf(preset);
+            }
             xdoc.Save(presetXmlFileName);
+        }
+
+        private void SaveScenePreset(string presetName)
+        {
+            RemoveScenePreset();
+
+            var xdoc = XDocument.Load(presetXmlFileName);
+
+            var scenePreset = new XElement("scenePreset",
+                new XAttribute("level", Application.loadedLevel),
+                new XAttribute("bgName", currentBg),
+                new XAttribute("yotogiName", currentYotogiName),
+                presetName);
+
+            DebugLog("save scene preset", scenePreset.ToString());
+            var scenePresetNodes = xdoc.Descendants("scenePreset");
+            if (scenePresetNodes.Count() == 0)
+            {
+                xdoc.Root.Add(scenePreset);
+            }
+            else
+            {
+                scenePresetNodes.Last().AddAfterSelf(scenePreset);
+            }
+            xdoc.Save(presetXmlFileName);
+        }
+
+        private void RemoveScenePreset()
+        {
+            var xdoc = XDocument.Load(presetXmlFileName);
+            IEnumerable<XElement> removeTarget =
+                from el in xdoc.Descendants("scenePreset")
+                where (string)el.Attribute("level") == Application.loadedLevel.ToString()
+                  && (string)el.Attribute("bgName") == currentBg
+                  && (string)el.Attribute("yotogiName") == currentYotogiName
+                select el;
+
+            if (removeTarget.Count() > 0)
+            {
+                foreach (var elem in removeTarget.ToList())
+                {
+                    DebugLog("remove scene preset", elem.ToString());
+                    elem.Remove();
+                }
+                xdoc.Save(presetXmlFileName);
+            }
+        }
+
+        private void RemovePreset(string presetName)
+        {
+            var xdoc = XDocument.Load(presetXmlFileName);
+            IEnumerable<XElement> removeTarget =
+                from el in xdoc.Descendants("preset")
+                where (string)el.Attribute("name") == presetName
+                select el;
+
+            if (removeTarget.Count() > 0)
+            {
+                foreach (var elem in removeTarget.ToList())
+                {
+                    DebugLog("remove preset", elem.ToString());
+                    elem.Remove();
+                }
+                xdoc.Save(presetXmlFileName);
+                loadPresetXml();
+            }
         }
 
         private int fixPx(int px)
